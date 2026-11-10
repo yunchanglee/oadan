@@ -1,0 +1,32 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="1.25"
+        android:scaleY="1.25"
+        android:translateX="24"
+        android:translateY="24">
+        <!-- Water drop contour -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M24,4 C24,4 10,20 10,29 C10,36.73 16.27,43 24,43 C31.73,43 38,36.73 38,29 C38,20 24,4 24,4 Z" />
+        <!-- Desert base -->
+        <path
+            android:fillColor="#E3C79A"
+            android:pathData="M12,32 C14.5,35 18.5,37 24,37 C29.5,37 33.5,35 36,32 C34.5,37 29.5,41 24,41 C18.5,41 13.5,37 12,32 Z" />
+        <!-- Sprout -->
+        <path
+            android:fillColor="#16796B"
+            android:pathData="M23,24 C23,20 20,17 16,17 C16,21 19,24 23,24 Z" />
+        <path
+            android:fillColor="#2E9483"
+            android:pathData="M25,23 C25,18 29,15 33,15 C33,20 29,23 25,23 Z" />
+        <path
+            android:strokeColor="#16796B"
+            android:strokeWidth="2.5"
+            android:strokeLineCap="round"
+            android:pathData="M24,32 L24,23" />
+    </group>
+</vector>

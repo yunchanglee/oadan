@@ -1,0 +1,216 @@
+package kr.co.oadan.ui
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kr.co.oadan.data.local.OadanDatabase
+import kr.co.oadan.data.model.FastSession
+import kr.co.oadan.data.model.Recipe
+import kr.co.oadan.data.repository.BackupRepository
+import kr.co.oadan.data.repository.ConditionRepository
+import kr.co.oadan.data.repository.FastingRepository
+import kr.co.oadan.data.repository.MealRepository
+import kr.co.oadan.data.repository.UserPreferences
+import kr.co.oadan.data.repository.UserPreferencesRepository
+import kr.co.oadan.data.repository.WaterRepository
+import kr.co.oadan.domain.OrganicEvaluation
+import kr.co.oadan.service.FastingNotificationManager
+import kr.co.oadan.widget.FastingAppWidgetProvider
+
+class OadanViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val database = OadanDatabase.getDatabase(application)
+    private val fastingRepository = FastingRepository(database.fastSessionDao())
+    private val waterRepository = WaterRepository(database.waterLogDao())
+    private val conditionRepository = ConditionRepository(database.conditionLogDao())
+    private val mealRepository = MealRepository(database.mealLogDao(), database.recipeDao())
+    private val preferencesRepository = UserPreferencesRepository(application)
+    private val backupRepository = BackupRepository(
+        database.fastSessionDao(),
+        database.waterLogDao(),
+        database.conditionLogDao(),
+        database.mealLogDao(),
+        preferencesRepository
+    )
+    private val notificationManager = FastingNotificationManager(application)
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            mealRepository.ensureInitialRecipes()
+        }
+    }
+
+    val activeSession: StateFlow<FastSession?> = fastingRepository.activeSession
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val preferences: StateFlow<UserPreferences> = preferencesRepository.userPreferencesFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferences())
+
+    val todayWaterMl: StateFlow<Int> = waterRepository.getTodayTotalWaterMl()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val recipes: StateFlow<List<Recipe>> = mealRepository.getAllRecipes()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val recentSessions: StateFlow<List<FastSession>> = fastingRepository.getRecentSessions(30)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val streakDays: StateFlow<Int> = fastingRepository.calculateStreak()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val latestWeight: StateFlow<Float?> = conditionRepository.latestWeightLog
+        .map { it?.weightKg }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun completeOnboarding() {
+        viewModelScope.launch {
+            preferencesRepository.setOnboardingCompleted(true)
+            preferencesRepository.setDisclaimerAccepted(true)
+        }
+    }
+
+    fun startFasting(protocol: String, targetHours: Float) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val now = System.currentTimeMillis()
+            val targetEndTime = now + (targetHours * 3600f * 1000f).toLong()
+            fastingRepository.startFasting(protocol, targetHours)
+            preferencesRepository.setProtocol(protocol, targetHours)
+
+            // 알람 예약
+            notificationManager.scheduleExactAlarm(
+                targetEndTime,
+                FastingNotificationManager.ACTION_COMPLETION_ALERT,
+                101
+            )
+
+            // 홈 위젯 업데이트
+            FastingAppWidgetProvider.updateAllWidgets(getApplication())
+        }
+    }
+
+    fun endFasting(isPartial: Boolean = false) {
+        viewModelScope.launch(Dispatchers.IO) {
+            fastingRepository.endFasting(isPartial = isPartial)
+            notificationManager.dismissOngoingNotification()
+            notificationManager.cancelAlarms(listOf(101))
+            FastingAppWidgetProvider.updateAllWidgets(getApplication())
+        }
+    }
+
+    fun updateSessionTimes(sessionId: Long, newStart: Long, newTargetEnd: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            fastingRepository.updateSessionTimes(sessionId, newStart, newTargetEnd)
+            notificationManager.cancelAlarms(listOf(101))
+            if (newTargetEnd > System.currentTimeMillis()) {
+                notificationManager.scheduleExactAlarm(
+                    newTargetEnd,
+                    FastingNotificationManager.ACTION_COMPLETION_ALERT,
+                    101
+                )
+            }
+            FastingAppWidgetProvider.updateAllWidgets(getApplication())
+        }
+    }
+
+    fun updateTargetHours(newTargetHours: Float) {
+        viewModelScope.launch(Dispatchers.IO) {
+            fastingRepository.updateActiveSessionTarget(newTargetHours)
+            val active = fastingRepository.getActiveSessionOnce()
+            if (active != null) {
+                notificationManager.cancelAlarms(listOf(101))
+                if (active.targetEndTimeUtc > System.currentTimeMillis()) {
+                    notificationManager.scheduleExactAlarm(
+                        active.targetEndTimeUtc,
+                        FastingNotificationManager.ACTION_COMPLETION_ALERT,
+                        101
+                    )
+                }
+            }
+            FastingAppWidgetProvider.updateAllWidgets(getApplication())
+        }
+    }
+
+    fun addWater(amountMl: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            waterRepository.addWater(amountMl)
+        }
+    }
+
+    fun saveConditionRecord(
+        weightKg: Float?,
+        muscleKg: Float?,
+        fatPercent: Float?,
+        conditionTag: String?,
+        memo: String?
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            conditionRepository.recordCondition(
+                weightKg = weightKg,
+                skeletalMuscleKg = muscleKg,
+                bodyFatPercent = fatPercent,
+                conditionTag = conditionTag,
+                memo = memo
+            )
+        }
+    }
+
+    fun saveMealRecord(
+        menuName: String,
+        checkVegFirst: Boolean,
+        checkNoProcessed: Boolean,
+        checkSlow20m: Boolean,
+        checkNoSweetDrink: Boolean,
+        checkSeasonal: Boolean,
+        notes: String,
+        onSaved: (Pair<Long, OrganicEvaluation>) -> Unit
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val active = fastingRepository.getActiveSessionOnce()
+            val result = mealRepository.saveMealLog(
+                menuName = menuName,
+                fastSessionId = active?.id,
+                checkVegFirst = checkVegFirst,
+                checkNoProcessed = checkNoProcessed,
+                checkSlow20m = checkSlow20m,
+                checkNoSweetDrink = checkNoSweetDrink,
+                checkSeasonal = checkSeasonal,
+                notes = notes
+            )
+            onSaved(result)
+        }
+    }
+
+    fun toggleRecipeBookmark(recipeId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            mealRepository.toggleBookmark(recipeId)
+        }
+    }
+
+    fun updateNotifications(start: Boolean, end: Boolean, stage: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setNotifications(start, end, stage)
+        }
+    }
+
+    suspend fun exportJson(): String {
+        return backupRepository.exportDataAsJson()
+    }
+
+    suspend fun importJson(json: String): Boolean {
+        return backupRepository.importDataFromJson(json)
+    }
+
+    fun clearAllData() {
+        viewModelScope.launch(Dispatchers.IO) {
+            backupRepository.clearAllData()
+            notificationManager.dismissOngoingNotification()
+            FastingAppWidgetProvider.updateAllWidgets(getApplication())
+        }
+    }
+}

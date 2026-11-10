@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="deep_ink">#1E2A28</color>
+    <color name="dune">#F1EADF</color>
+    <color name="oasis_teal">#16796B</color>
+    <color name="organic_sage">#7E9B6B</color>
+    <color name="pebble">#D8D1C5</color>
+    <color name="sand">#FAF6EF</color>
+    <color name="spring_water">#5FB8A8</color>
+    <color name="stone">#5C6663</color>
+    <color name="sunset_coral">#E8875B</color>
+    <string name="app_name">오아단</string>
+    <string name="app_slogan">비우고, 채우는 나만의 오아시스</string>
+    <string name="channel_fasting_desc">단식 시작, 종료 및 대사 단계 전환 알림</string>
+    <string name="channel_fasting_name">단식 알림</string>
+    <string name="channel_ongoing_desc">상단 고정 공복 진행 상태 알림</string>
+    <string name="channel_ongoing_name">실시간 공복 진행 알림</string>
+    <style name="Theme.Oadan" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#FAF6EF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>

@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">오아단</string>
+    <string name="app_slogan">비우고, 채우는 나만의 오아시스</string>
+    <string name="channel_fasting_name">단식 알림</string>
+    <string name="channel_fasting_desc">단식 시작, 종료 및 대사 단계 전환 알림</string>
+    <string name="channel_ongoing_name">실시간 공복 진행 알림</string>
+    <string name="channel_ongoing_desc">상단 고정 공복 진행 상태 알림</string>
+</resources>
