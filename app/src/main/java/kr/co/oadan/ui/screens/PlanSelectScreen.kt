@@ -21,7 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
@@ -29,7 +29,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -114,48 +116,77 @@ fun PlanSelectScreen(
     var customHoursText by remember { mutableStateOf("16") }
     var customError by remember { mutableStateOf<String?>(null) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Sand)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(top = 16.dp, bottom = 120.dp)
-        ) {
-            // App Bar
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            // App Bar (SC-02)
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (onBack != null) {
                     IconButton(onClick = onBack) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "뒤로")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로", tint = MaterialTheme.colorScheme.onBackground)
                     }
                 }
                 Spacer(modifier = Modifier.weight(1f))
-                Text(text = "플랜 선택", fontSize = 14.sp, color = Stone)
+                Text(text = "2 / 3", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
+        },
+        bottomBar = {
+            // 하단 고정 시작 버튼 (Scaffold bottomBar 분리로 요일별 설정 항목과 물리적 겹침 원천 차단)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 14.dp)
+            ) {
+                Button(
+                    onClick = {
+                        onPlanSelected(selectedPlan.name, selectedPlan.targetHours, useSchedule)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = OasisTeal),
+                    shape = RoundedCornerShape(999.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                ) {
+                    Text(
+                        text = "${selectedPlan.name}로 시작하기",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 16.dp)
+        ) {
             Text(
                 text = "나에게 맞는\n공복 리듬을 골라요",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = DeepInk,
+                color = MaterialTheme.colorScheme.onBackground,
                 lineHeight = 32.sp
             )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(text = "언제든 변경할 수 있어요", fontSize = 14.sp, color = Stone)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = "언제든 바꿀 수 있어요", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // 2x2 프리셋 그리드
+            // 2x2 프리셋 그리드 (SC-02)
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -193,22 +224,22 @@ fun PlanSelectScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // 추가 옵션 칩 (OMAD, 5:2, 직접 설정 1~72시간)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ChipOption(text = "OMAD (23:1)", isSelected = selectedPlan.name == "OMAD") {
+                ChipOption(text = "OMAD", isSelected = selectedPlan.name == "OMAD") {
                     selectedPlan = FastingPlan("OMAD", 23f, "1일 1식", 4, "순한 보식", "맑은 채수로 시작하세요")
                 }
-                ChipOption(text = "5:2 플랜", isSelected = selectedPlan.name == "5:2") {
+                ChipOption(text = "5:2", isSelected = selectedPlan.name == "5:2") {
                     selectedPlan = FastingPlan("5:2", 24f, "주 2회 간헐적 단식", 4, "회복 보식", "2단계 회복식을 준수하세요")
                 }
-                ChipOption(text = "직접 설정", isSelected = selectedPlan.name.startsWith("커스텀")) {
+                ChipOption(text = "직접 설정", isSelected = selectedPlan.name.startsWith("커스텀"), hasIcon = true) {
                     showCustomDialog = true
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // 추천 보식 안내 카드 (FR-01 × OA-01)
             Box(
@@ -216,9 +247,9 @@ fun PlanSelectScreen(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color(0xFFF3F6EE))
-                    .padding(16.dp)
+                    .padding(14.dp)
             ) {
-                Row(verticalAlignment = Alignment.Top) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = "🥣", fontSize = 24.sp)
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
@@ -228,61 +259,40 @@ fun PlanSelectScreen(
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF55703F)
                         )
-                        Spacer(modifier = Modifier.height(3.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = selectedPlan.breakFastTip,
-                            fontSize = 13.sp,
-                            color = Stone,
-                            lineHeight = 18.sp
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 17.sp
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // 요일별 스케줄 토글
+            // 요일별 스케줄 토글 (충분한 패딩과 크기로 시원하게 배치)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { useSchedule = !useSchedule }
+                    .padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = "요일별로 다르게 설정", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                    Text(text = "주말엔 14:10처럼 가볍게 쉬어가요", fontSize = 12.sp, color = Stone)
+                    Text(text = "요일별로 다르게 설정", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(text = "주말엔 14:10처럼 가볍게", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(
                     checked = useSchedule,
                     onCheckedChange = { useSchedule = it },
-                    colors = SwitchDefaults.colors(checkedThumbColor = OasisTeal)
-                )
-            }
-        }
-
-        // 하단 고정 시작 버튼
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(Sand)
-                .navigationBarsPadding()
-                .padding(20.dp)
-        ) {
-            Button(
-                onClick = {
-                    onPlanSelected(selectedPlan.name, selectedPlan.targetHours, useSchedule)
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = OasisTeal),
-                shape = RoundedCornerShape(999.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-            ) {
-                Text(
-                    text = "${selectedPlan.name}로 시작하기",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = OasisTeal
+                    )
                 )
             }
         }
@@ -360,7 +370,11 @@ private fun PlanCard(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(if (isSelected) Color(0xFFF6FBFA) else Color.White)
+            .background(
+                if (isSelected) {
+                    if (MaterialTheme.colorScheme.background == Sand) Color(0xFFF6FBFA) else MaterialTheme.colorScheme.surfaceVariant
+                } else MaterialTheme.colorScheme.surface
+            )
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
                 color = if (isSelected) OasisTeal else Pebble,
@@ -378,7 +392,7 @@ private fun PlanCard(
                     text = plan.name,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isSelected) Teal700 else DeepInk,
+                    color = if (isSelected) OasisTeal else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 if (isSelected) {
@@ -392,12 +406,23 @@ private fun PlanCard(
             }
 
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = plan.subtitle,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = if (plan.name == "16:8") SunsetCoral else Stone
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = plan.subtitle,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (plan.name == "16:8") {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(SunsetCoral)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -418,21 +443,33 @@ private fun PlanCard(
 private fun ChipOption(
     text: String,
     isSelected: Boolean,
+    hasIcon: Boolean = false,
     onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(if (isSelected) Teal50 else Color.White)
+            .background(if (isSelected) Teal50 else MaterialTheme.colorScheme.surface)
             .border(1.dp, if (isSelected) OasisTeal else Pebble, RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
-        Text(
-            text = text,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-            color = if (isSelected) Teal700 else DeepInk
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (hasIcon) {
+                Icon(
+                    imageVector = Icons.Default.Tune,
+                    contentDescription = null,
+                    tint = if (isSelected) Teal700 else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(15.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            Text(
+                text = text,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (isSelected) Teal700 else MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }

@@ -30,6 +30,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -134,7 +135,7 @@ fun ReportScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Sand)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -153,14 +154,14 @@ fun ReportScreen(
                     text = "리포트",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = DeepInk
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 // 주간 / 월간 토글 칩
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(999.dp))
-                        .background(Dune)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                         .padding(3.dp)
                 ) {
                     ToggleChip(text = "주간", isSelected = !isMonthly) { isMonthly = false }
@@ -283,7 +284,7 @@ private fun MonthlyCalendarSection(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
     ) {
         // 연도 & 월 헤더 및 이전/다음 달 버튼
@@ -293,16 +294,16 @@ private fun MonthlyCalendarSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onPrevMonth, modifier = Modifier.size(32.dp)) {
-                Icon(imageVector = Icons.Default.ChevronLeft, contentDescription = "이전달", tint = Stone)
+                Icon(imageVector = Icons.Default.ChevronLeft, contentDescription = "이전달", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(
                 text = "${year}년 ${month + 1}월",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = DeepInk
+                color = MaterialTheme.colorScheme.onSurface
             )
             IconButton(onClick = onNextMonth, modifier = Modifier.size(32.dp)) {
-                Icon(imageVector = Icons.Default.ChevronRight, contentDescription = "다음달", tint = Stone)
+                Icon(imageVector = Icons.Default.ChevronRight, contentDescription = "다음달", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
@@ -478,14 +479,14 @@ private fun WeeklySummarySection(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
     ) {
         Text(
             text = "이번 주 공복 현황",
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
-            color = DeepInk
+            color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -553,7 +554,7 @@ private fun SelectedDateDetailCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
     ) {
         Row(
@@ -565,7 +566,7 @@ private fun SelectedDateDetailCard(
                 text = "$dateStr 기록 상세",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = DeepInk
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             if (session != null) {
@@ -633,14 +634,14 @@ private fun SelectedDateDetailCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Sand)
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(14.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "이 날은 단식 없이 편안히 몸을 쉬어간 날이에요 🌿",
                     fontSize = 13.sp,
-                    color = Stone
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -657,15 +658,15 @@ private fun DetailMiniCard(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
-            .background(Sand)
+            .background(MaterialTheme.colorScheme.background)
             .padding(10.dp)
     ) {
         Column {
-            Text(text = title, fontSize = 11.sp, color = Stone)
+            Text(text = title, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = DeepInk)
+            Text(text = value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = sub, fontSize = 10.sp, color = Stone)
+            Text(text = sub, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -696,7 +697,7 @@ private fun DualAxisChartSection(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
     ) {
         Row(
@@ -704,8 +705,8 @@ private fun DualAxisChartSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = "공복 시간 · 체중 추이", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = DeepInk)
-            Text(text = "최근 7일", fontSize = 12.sp, color = Stone)
+            Text(text = "공복 시간 · 체중 추이", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(text = "최근 7일", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -819,13 +820,13 @@ private fun StatCard(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(14.dp)
     ) {
         Column {
-            Text(text = label, fontSize = 12.sp, color = Stone)
+            Text(text = label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = DeepInk)
+            Text(text = value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(4.dp))
             Text(text = subText, fontSize = 11.sp, color = subColor, fontWeight = FontWeight.SemiBold)
         }
@@ -837,7 +838,7 @@ private fun ToggleChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(999.dp))
-            .background(if (isSelected) Color.White else Color.Transparent)
+            .background(if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 6.dp)
     ) {
@@ -845,7 +846,7 @@ private fun ToggleChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
             text = text,
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
-            color = if (isSelected) DeepInk else Stone
+            color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

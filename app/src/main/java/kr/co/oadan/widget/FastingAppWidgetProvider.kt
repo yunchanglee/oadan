@@ -18,7 +18,7 @@ import kr.co.oadan.domain.FastTimerEngine
 import kr.co.oadan.service.FastingActionReceiver
 import kr.co.oadan.service.FastingNotificationManager
 
-class FastingAppWidgetProvider : AppWidgetProvider() {
+open class FastingAppWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(
         context: Context,
@@ -143,15 +143,44 @@ class FastingAppWidgetProvider : AppWidgetProvider() {
     companion object {
         fun updateAllWidgets(context: Context) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
-            val componentName = ComponentName(context, FastingAppWidgetProvider::class.java)
-            val ids = appWidgetManager.getAppWidgetIds(componentName)
-            if (ids.isNotEmpty()) {
-                val intent = Intent(context, FastingAppWidgetProvider::class.java).apply {
-                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+            val providers = listOf(
+                ComponentName(context, FastingAppWidgetProvider::class.java),
+                ComponentName(context, FastingAppWidgetProvider4x2::class.java)
+            )
+
+            for (component in providers) {
+                val ids = appWidgetManager.getAppWidgetIds(component)
+                if (ids.isNotEmpty()) {
+                    val targetClass = if (component.className.endsWith("4x2")) {
+                        FastingAppWidgetProvider4x2::class.java
+                    } else {
+                        FastingAppWidgetProvider::class.java
+                    }
+                    val intent = Intent(context, targetClass).apply {
+                        action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                    }
+                    context.sendBroadcast(intent)
                 }
-                context.sendBroadcast(intent)
             }
+        }
+
+        /**
+         * Android 8.0(API 26)+ 원터치 홈 화면 위젯 핀 추가 기능
+         */
+        fun pinWidgetToHomeScreen(context: Context, is4x2: Boolean): Boolean {
+            val appWidgetManager = context.getSystemService(AppWidgetManager::class.java) ?: return false
+            if (!appWidgetManager.isRequestPinAppWidgetSupported) {
+                return false
+            }
+            val targetClass = if (is4x2) FastingAppWidgetProvider4x2::class.java else FastingAppWidgetProvider::class.java
+            val provider = ComponentName(context, targetClass)
+            return appWidgetManager.requestPinAppWidget(provider, null, null)
         }
     }
 }
+
+/**
+ * 4x2 와이드 위젯 전용 리시버 (Manifest 분리 등록을 위함)
+ */
+class FastingAppWidgetProvider4x2 : FastingAppWidgetProvider()

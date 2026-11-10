@@ -1,5 +1,7 @@
 package kr.co.oadan.ui.components
 
+import androidx.activity.compose.BackHandler
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +43,10 @@ fun SafetyBottomSheet(
     onDismissRequest: () -> Unit,
     onStopFastingNow: () -> Unit
 ) {
+    BackHandler {
+        onDismissRequest()
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,

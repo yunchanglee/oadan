@@ -61,21 +61,29 @@
             <Button
                 android:id="@+id/widget_btn_water"
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
+                android:layout_height="34dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
                 android:backgroundTint="#E8F5F2"
                 android:text="💧 +250ml"
                 android:textColor="#106357"
-                android:textSize="12sp" />
+                android:textSize="11sp" />
 
             <Button
                 android:id="@+id/widget_btn_toggle"
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
+                android:layout_height="34dp"
                 android:layout_marginStart="8dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
                 android:backgroundTint="#F1EADF"
                 android:text="공복 마치기"
                 android:textColor="#1E2A28"
-                android:textSize="12sp" />
+                android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
 

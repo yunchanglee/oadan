@@ -25,11 +25,14 @@ class FastingNotificationManager(private val context: Context) {
         const val CHANNEL_ONGOING = "channel_fasting_ongoing"
         const val ONGOING_NOTIFICATION_ID = 1001
         const val ALERT_NOTIFICATION_ID = 2001
+        const val CHEER_NOTIFICATION_ID = 2002
 
         const val ACTION_ADD_WATER_250 = "kr.co.oadan.ACTION_ADD_WATER_250"
         const val ACTION_STOP_FASTING = "kr.co.oadan.ACTION_STOP_FASTING"
         const val ACTION_STAGE_ALERT = "kr.co.oadan.ACTION_STAGE_ALERT"
         const val ACTION_COMPLETION_ALERT = "kr.co.oadan.ACTION_COMPLETION_ALERT"
+        const val ACTION_MID_FAST_CHEER = "kr.co.oadan.ACTION_MID_FAST_CHEER"
+        const val ACTION_OVERACHIEVE_CHEER = "kr.co.oadan.ACTION_OVERACHIEVE_CHEER"
     }
 
     init {
@@ -151,6 +154,36 @@ class FastingNotificationManager(private val context: Context) {
             .build()
 
         notificationManager.notify(ALERT_NOTIFICATION_ID, notification)
+    }
+
+    /**
+     * 공복 진행 중 또는 목표 시간 초과 시 응원 메시지 노출 알림
+     */
+    fun showEncouragementAlert(title: String, message: String, isOverachieved: Boolean = false) {
+        val appIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val appPendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            appIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val accentColor = if (isOverachieved) 0xFFE8875B.toInt() else 0xFF16796B.toInt()
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_FASTING_ALERTS)
+            .setSmallIcon(R.drawable.ic_oadan_symbol)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setContentIntent(appPendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setColor(accentColor)
+            .build()
+
+        notificationManager.notify(CHEER_NOTIFICATION_ID, notification)
     }
 
     fun scheduleExactAlarm(triggerAtMillis: Long, action: String, requestCode: Int) {

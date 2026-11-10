@@ -69,7 +69,7 @@ fun OadanBottomNavigation(
             .background(MaterialTheme.colorScheme.surface)
             .navigationBarsPadding()
     ) {
-        HorizontalDivider(color = Pebble.copy(alpha = 0.6f), thickness = 1.dp)
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), thickness = 1.dp)
 
         Row(
             modifier = Modifier
@@ -93,13 +93,13 @@ fun OadanBottomNavigation(
                         modifier = Modifier
                             .size(width = 64.dp, height = 32.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(if (isSelected) Teal50 else Color.Transparent),
+                            .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = tab.title,
-                            tint = if (isSelected) Teal700 else Stone,
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(24.dp)
                         )
 
@@ -120,7 +120,7 @@ fun OadanBottomNavigation(
                         text = tab.title,
                         fontSize = 12.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Teal700 else Stone
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

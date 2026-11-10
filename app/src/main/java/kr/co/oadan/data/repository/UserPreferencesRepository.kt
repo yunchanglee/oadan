@@ -21,8 +21,12 @@ data class UserPreferences(
     val notificationFastingStart: Boolean = true,
     val notificationFastingEnd: Boolean = true,
     val notificationStageChange: Boolean = true,
+    val notificationCheerMessage: Boolean = true,
     val streakSaverCount: Int = 2,
-    val disclaimerAccepted: Boolean = false
+    val disclaimerAccepted: Boolean = false,
+    val themeMode: String = "LIGHT", // "LIGHT", "DARK", "SYSTEM"
+    val userHeightCm: Float? = null,
+    val userGender: String = "MALE"
 )
 
 class UserPreferencesRepository(private val context: Context) {
@@ -36,8 +40,12 @@ class UserPreferencesRepository(private val context: Context) {
         val NOTIFY_FASTING_START = booleanPreferencesKey("notify_fasting_start")
         val NOTIFY_FASTING_END = booleanPreferencesKey("notify_fasting_end")
         val NOTIFY_STAGE_CHANGE = booleanPreferencesKey("notify_stage_change")
+        val NOTIFY_CHEER_MESSAGE = booleanPreferencesKey("notify_cheer_message")
         val STREAK_SAVER_COUNT = intPreferencesKey("streak_saver_count")
         val DISCLAIMER_ACCEPTED = booleanPreferencesKey("disclaimer_accepted")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
+        val USER_HEIGHT_CM = floatPreferencesKey("user_height_cm")
+        val USER_GENDER = stringPreferencesKey("user_gender")
     }
 
     val userPreferencesFlow: Flow<UserPreferences> = context.dataStore.data.map { prefs ->
@@ -50,8 +58,12 @@ class UserPreferencesRepository(private val context: Context) {
             notificationFastingStart = prefs[PreferencesKeys.NOTIFY_FASTING_START] ?: true,
             notificationFastingEnd = prefs[PreferencesKeys.NOTIFY_FASTING_END] ?: true,
             notificationStageChange = prefs[PreferencesKeys.NOTIFY_STAGE_CHANGE] ?: true,
+            notificationCheerMessage = prefs[PreferencesKeys.NOTIFY_CHEER_MESSAGE] ?: true,
             streakSaverCount = prefs[PreferencesKeys.STREAK_SAVER_COUNT] ?: 2,
-            disclaimerAccepted = prefs[PreferencesKeys.DISCLAIMER_ACCEPTED] ?: false
+            disclaimerAccepted = prefs[PreferencesKeys.DISCLAIMER_ACCEPTED] ?: false,
+            themeMode = prefs[PreferencesKeys.THEME_MODE] ?: "LIGHT",
+            userHeightCm = prefs[PreferencesKeys.USER_HEIGHT_CM],
+            userGender = prefs[PreferencesKeys.USER_GENDER] ?: "MALE"
         )
     }
 
@@ -88,6 +100,12 @@ class UserPreferencesRepository(private val context: Context) {
         }
     }
 
+    suspend fun setCheerNotification(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.NOTIFY_CHEER_MESSAGE] = enabled
+        }
+    }
+
     suspend fun setDisclaimerAccepted(accepted: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.DISCLAIMER_ACCEPTED] = accepted
@@ -104,6 +122,19 @@ class UserPreferencesRepository(private val context: Context) {
             }
         }
         return success
+    }
+
+    suspend fun setThemeMode(mode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.THEME_MODE] = mode
+        }
+    }
+
+    suspend fun setUserBodyProfile(heightCm: Float, gender: String) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.USER_HEIGHT_CM] = heightCm
+            prefs[PreferencesKeys.USER_GENDER] = gender
+        }
     }
 
     suspend fun resetAll() {

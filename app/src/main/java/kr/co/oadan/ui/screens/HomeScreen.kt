@@ -1,6 +1,7 @@
 package kr.co.oadan.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,11 +46,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kr.co.oadan.data.model.FastSession
+import kr.co.oadan.domain.EncouragementMessageProvider
 import kr.co.oadan.domain.FastTimerEngine
 import kr.co.oadan.domain.FastingTimerState
 import kr.co.oadan.domain.MetabolicStage
 import kr.co.oadan.ui.components.FastingDefenseDialog
 import kr.co.oadan.ui.components.FastingTimeEditDialog
+import kr.co.oadan.ui.components.HealthyBodyIllustration
 import kr.co.oadan.ui.components.MetabolicStageBottomSheet
 import kr.co.oadan.ui.components.OasisTimer
 import kr.co.oadan.ui.components.Over72HoursDialog
@@ -60,6 +63,7 @@ import kr.co.oadan.ui.theme.OasisTeal
 import kr.co.oadan.ui.theme.Sand
 import kr.co.oadan.ui.theme.StageLagoon
 import kr.co.oadan.ui.theme.Stone
+import kr.co.oadan.ui.theme.SunsetCoral
 import kr.co.oadan.ui.theme.Teal50
 import kr.co.oadan.ui.theme.Teal700
 import kr.co.oadan.ui.theme.Teal800
@@ -149,7 +153,7 @@ fun HomeScreen(
                     Icon(
                         imageVector = Icons.Default.Notifications,
                         contentDescription = "알림 및 플랜",
-                        tint = DeepInk
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
@@ -244,7 +248,7 @@ fun HomeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color.White)
+                            .background(MaterialTheme.colorScheme.surface)
                     ) {
                         // SC-11 좌측 인디케이터 컬러 바
                         Box(
@@ -270,7 +274,7 @@ fun HomeScreen(
                                         text = "${timerState.nextStage.stageName}까지 ",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = DeepInk
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         text = FastTimerEngine.formatRemainingKorean(timerState.nextStageRemainingMillis),
@@ -283,7 +287,99 @@ fun HomeScreen(
                                 Text(
                                     text = timerState.nextStage.description,
                                     fontSize = 12.sp,
-                                    color = Stone,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = 16.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 공복 응원 메시지 영역 (공복 진행 중 따뜻한 격려 또는 목표 초과 달성 칭찬)
+                val elapsedHours = (timerState.elapsedMillis / (3600f * 1000f)).toInt()
+                if (timerState.isGoalReached) {
+                    // 목표 시간(지정 기간) 초과 시 응원 카드
+                    val overachievedHours = ((timerState.elapsedMillis - activeSession.targetHours * 3600000f) / 3600000f).toInt().coerceAtLeast(0)
+                    val overCheer = remember(overachievedHours) {
+                        EncouragementMessageProvider.getOverachievedMessage(overachievedHours)
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(SunsetCoral.copy(alpha = 0.12f))
+                            .border(1.dp, SunsetCoral.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+                            .padding(14.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = overCheer.emoji, fontSize = 28.sp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = overCheer.title,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SunsetCoral
+                                )
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    text = overCheer.message,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    lineHeight = 16.sp
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // 공복 진행 중 격려 카드 (터치 시 다른 응원 메시지 리프레시)
+                    var cheerKey by remember { mutableStateOf(0) }
+                    val midCheer = remember(elapsedHours, cheerKey) {
+                        if (cheerKey == 0) {
+                            EncouragementMessageProvider.getMidFastMessage(elapsedHours)
+                        } else {
+                            EncouragementMessageProvider.getRandomMidFastCheer()
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Teal50)
+                            .border(1.dp, OasisTeal.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                            .clickable { cheerKey++ }
+                            .padding(14.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = midCheer.emoji, fontSize = 24.sp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = midCheer.title,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = OasisTeal
+                                    )
+                                    Text(
+                                        text = "터치하여 다른 응원 보기 ↻",
+                                        fontSize = 10.sp,
+                                        color = Stone
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = midCheer.message,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     lineHeight = 16.sp
                                 )
                             }
@@ -346,15 +442,9 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(160.dp)
-                            .clip(CircleShape)
-                            .background(Teal50),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = "💧", fontSize = 64.sp)
-                    }
+                    HealthyBodyIllustration(
+                        canvasSize = 180.dp
+                    )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -362,7 +452,7 @@ fun HomeScreen(
                         text = "오늘의 공복을 시작해 볼까요?",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = DeepInk
+                        color = MaterialTheme.colorScheme.onBackground
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -370,7 +460,7 @@ fun HomeScreen(
                     Text(
                         text = "편안히 쉬어가며 속을 비워내는 시간이에요.",
                         fontSize = 14.sp,
-                        color = Stone
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Spacer(modifier = Modifier.height(32.dp))

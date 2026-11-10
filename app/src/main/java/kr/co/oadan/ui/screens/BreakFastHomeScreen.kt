@@ -19,7 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Check
@@ -109,7 +109,7 @@ fun BreakFastHomeScreen(
                     text = "오늘의 오아시스 한 끼",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = DeepInk
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -144,7 +144,7 @@ fun BreakFastHomeScreen(
             Text(
                 text = "${lastFastedHours.toInt()}시간 공복 후엔 ${recommendedStage}을 추천해요",
                 fontSize = 14.sp,
-                color = Stone
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -156,7 +156,7 @@ fun BreakFastHomeScreen(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(if (isSelected) OasisTeal else Dune)
+                            .background(if (isSelected) OasisTeal else MaterialTheme.colorScheme.surfaceVariant)
                             .clickable { selectedFilter = filter }
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
@@ -164,7 +164,7 @@ fun BreakFastHomeScreen(
                             text = filter,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = if (isSelected) Color.White else DeepInk
+                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -193,9 +193,9 @@ fun BreakFastHomeScreen(
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(text = "🥬 채소", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF55703F))
-                        Icon(imageVector = Icons.Default.ArrowForward, contentDescription = null, tint = Color(0xFF55703F), modifier = Modifier.size(14.dp))
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF55703F), modifier = Modifier.size(14.dp))
                         Text(text = " 🧈 단백질", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF55703F))
-                        Icon(imageVector = Icons.Default.ArrowForward, contentDescription = null, tint = Color(0xFF55703F), modifier = Modifier.size(14.dp))
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF55703F), modifier = Modifier.size(14.dp))
                         Text(text = " 🍠 탄수화물", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF55703F))
                     }
                 }
@@ -209,7 +209,7 @@ fun BreakFastHomeScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color.White)
+                        .background(MaterialTheme.colorScheme.surface)
                         .clickable { onSelectRecipe(featuredRecipe) }
                 ) {
                     Column {
@@ -259,13 +259,13 @@ fun BreakFastHomeScreen(
                                 text = featuredRecipe.title,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = DeepInk
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = featuredRecipe.subtitle,
                                 fontSize = 13.sp,
-                                color = Stone
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
                             Spacer(modifier = Modifier.height(10.dp))
@@ -279,20 +279,20 @@ fun BreakFastHomeScreen(
                                     Icon(
                                         imageVector = Icons.Default.Schedule,
                                         contentDescription = null,
-                                        tint = Stone,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Spacer(modifier = Modifier.width(2.dp))
                                     Text(
                                         text = "${featuredRecipe.prepTimeMinutes}분",
                                         fontSize = 12.sp,
-                                        color = Stone
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                                 Text(
                                     text = "· ${featuredRecipe.tags.take(2).joinToString(" · ")}",
                                     fontSize = 12.sp,
-                                    color = Stone
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -313,7 +313,7 @@ fun BreakFastHomeScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(Color.White)
+                                .background(MaterialTheme.colorScheme.surface)
                                 .clickable { onSelectRecipe(recipe) }
                         ) {
                             Column {
@@ -331,14 +331,14 @@ fun BreakFastHomeScreen(
                                         text = recipe.title,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = DeepInk,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 1
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
                                         text = "${recipe.prepTimeMinutes}분 · 혈당 ${recipe.glycemicFriendly}",
                                         fontSize = 11.sp,
-                                        color = Stone
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -396,10 +396,10 @@ fun ShoppingListDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(imageVector = Icons.Default.ShoppingBasket, contentDescription = null, tint = OasisTeal)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("오가닉 장보기 리스트", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = DeepInk)
+                    Text("오가닉 장보기 리스트", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
                 IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "닫기", tint = Stone)
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "닫기", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         },
@@ -412,7 +412,7 @@ fun ShoppingListDialog(
                 Text(
                     text = "추천 보식 레시피의 자연 식재료를 장보기 전에 확인하고 체크하세요 🥬",
                     fontSize = 12.sp,
-                    color = Stone
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -442,7 +442,7 @@ fun ShoppingListDialog(
                         Text(
                             text = item,
                             fontSize = 14.sp,
-                            color = if (isChecked) Stone else DeepInk,
+                            color = if (isChecked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                             textDecoration = if (isChecked) TextDecoration.LineThrough else TextDecoration.None
                         )
                     }

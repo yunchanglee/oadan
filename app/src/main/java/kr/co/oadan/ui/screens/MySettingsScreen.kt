@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package kr.co.oadan.ui.screens
 
 import android.content.ClipData
@@ -24,8 +26,9 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -42,9 +45,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import kr.co.oadan.ui.components.WidgetGuideBottomSheet
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.unit.sp
 import kr.co.oadan.data.repository.UserPreferences
 import kr.co.oadan.ui.theme.DeepInk
@@ -56,13 +61,16 @@ import kr.co.oadan.ui.theme.Sand
 import kr.co.oadan.ui.theme.Stone
 import kr.co.oadan.ui.theme.Teal50
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MySettingsScreen(
     preferences: UserPreferences,
     onUpdateNotifications: (start: Boolean, end: Boolean, stage: Boolean) -> Unit,
+    onUpdateCheerNotification: (Boolean) -> Unit = {},
     onNavigateToPlanSelect: () -> Unit,
     onUpdateWaterGoal: (Int) -> Unit = {},
     onUpdateSchedule: (Boolean) -> Unit = {},
+    onUpdateThemeMode: (String) -> Unit = {},
     onExportJson: suspend () -> String,
     onImportJson: suspend (String) -> Boolean,
     onClearAllData: () -> Unit
@@ -76,12 +84,13 @@ fun MySettingsScreen(
     var showWaterGoalDialog by remember { mutableStateOf(false) }
     var showScheduleDialog by remember { mutableStateOf(false) }
     var showWidgetGuideDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
     var importText by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Sand)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -94,13 +103,13 @@ fun MySettingsScreen(
                 text = "마이 설정",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = DeepInk
+                color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "광고 없이, 결제 없이, 오롯이 나를 위한 공복 🌿",
                 fontSize = 13.sp,
-                color = Stone
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -114,14 +123,14 @@ fun MySettingsScreen(
                     showArrow = true,
                     onClick = onNavigateToPlanSelect
                 )
-                Divider(color = Pebble.copy(alpha = 0.5f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 SettingsRow(
                     title = "요일별 단식 스케줄",
                     subtitle = if (preferences.useDayOfWeekSchedule) "요일별 맞춤 플랜 사용 중" else "매일 동일한 플랜 적용 중",
                     showArrow = true,
                     onClick = { showScheduleDialog = true }
                 )
-                Divider(color = Pebble.copy(alpha = 0.5f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 SettingsRow(
                     title = "일일 수분 목표",
                     subtitle = "${preferences.dailyWaterGoalMl}ml (추천: 2,000ml)",
@@ -132,7 +141,24 @@ fun MySettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 2. 알림 설정 (FR-05)
+            // 2. 화면 테마 설정 (라이트 모드 / 다크 모드 / 시스템 동기화)
+            SettingsSectionHeader("화면 테마")
+            SettingsCard {
+                SettingsRow(
+                    title = "화면 모드",
+                    subtitle = when (preferences.themeMode) {
+                        "DARK" -> "🌙 다크 모드 (Night Oasis)"
+                        "SYSTEM" -> "⚙️ 시스템 설정 동기화"
+                        else -> "☀️ 라이트 모드 (기본)"
+                    },
+                    showArrow = true,
+                    onClick = { showThemeDialog = true }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 3. 알림 설정 (FR-05)
             SettingsSectionHeader("알림 설정")
             SettingsCard {
                 SettingsToggleRow(
@@ -142,7 +168,7 @@ fun MySettingsScreen(
                         onUpdateNotifications(it, preferences.notificationFastingEnd, preferences.notificationStageChange)
                     }
                 )
-                Divider(color = Pebble.copy(alpha = 0.5f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 SettingsToggleRow(
                     title = "단식 완료 알림",
                     checked = preferences.notificationFastingEnd,
@@ -150,7 +176,7 @@ fun MySettingsScreen(
                         onUpdateNotifications(preferences.notificationFastingStart, it, preferences.notificationStageChange)
                     }
                 )
-                Divider(color = Pebble.copy(alpha = 0.5f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 SettingsToggleRow(
                     title = "생체 대사 단계 전환 알림",
                     checked = preferences.notificationStageChange,
@@ -158,11 +184,19 @@ fun MySettingsScreen(
                         onUpdateNotifications(preferences.notificationFastingStart, preferences.notificationFastingEnd, it)
                     }
                 )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                SettingsToggleRow(
+                    title = "공복 응원 및 초과 달성 알림",
+                    checked = preferences.notificationCheerMessage,
+                    onCheckedChange = {
+                        onUpdateCheerNotification(it)
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 3. 위젯 및 외부 연동 (FR-07)
+            // 4. 위젯 및 외부 연동 (FR-07)
             SettingsSectionHeader("위젯 및 웰니스 연동")
             SettingsCard {
                 SettingsRow(
@@ -171,7 +205,7 @@ fun MySettingsScreen(
                     showArrow = true,
                     onClick = { showWidgetGuideDialog = true }
                 )
-                Divider(color = Pebble.copy(alpha = 0.5f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 SettingsRow(
                     title = "헬스 커넥트 (Health Connect)",
                     subtitle = "삼성 헬스 · 구글 핏 연동 준비 중 (v2.0)"
@@ -180,7 +214,7 @@ fun MySettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. 데이터 관리 & 백업 (NFR-04, NFR-05, NFR-07)
+            // 5. 데이터 관리 & 백업 (NFR-04, NFR-05, NFR-07)
             SettingsSectionHeader("데이터 백업 및 복원 (Local-First)")
             SettingsCard {
                 SettingsRow(
@@ -195,7 +229,7 @@ fun MySettingsScreen(
                         }
                     }
                 )
-                Divider(color = Pebble.copy(alpha = 0.5f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 SettingsRow(
                     title = "백업 데이터 불러오기",
                     subtitle = "기존에 저장해 둔 JSON 백업 복원",
@@ -205,7 +239,7 @@ fun MySettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 5. 안전 & 정책 안내 (NFR-06, NFR-07)
+            // 6. 안전 & 정책 안내 (NFR-06, NFR-07)
             SettingsSectionHeader("안내 및 개인정보")
             SettingsCard {
                 SettingsRow(
@@ -213,7 +247,7 @@ fun MySettingsScreen(
                     showArrow = true,
                     onClick = { showDisclaimerDialog = true }
                 )
-                Divider(color = Pebble.copy(alpha = 0.5f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 SettingsRow(
                     title = "데이터 및 전체 기록 즉시 삭제",
                     titleColor = ErrorRed,
@@ -229,14 +263,14 @@ fun MySettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Teal50)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
                     .padding(14.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "오아단 v1.0.0 · 전 기능 무료 & 무광고",
                     fontSize = 12.sp,
-                    color = Stone
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
@@ -465,27 +499,66 @@ fun MySettingsScreen(
             )
         }
 
-        // 위젯 안내 다이얼로그 (FR-07)
+        // 위젯 안내 바텀시트 (FR-07)
         if (showWidgetGuideDialog) {
+            WidgetGuideBottomSheet(
+                onDismissRequest = { showWidgetGuideDialog = false }
+            )
+        }
+        // 화면 테마 모드 선택 다이얼로그 (라이트 / 다크 / 시스템)
+        if (showThemeDialog) {
+            val themeOptions = listOf(
+                Triple("LIGHT", "☀️ 라이트 모드 (기본)", "밝고 편안한 오아시스 샌드 컬러"),
+                Triple("DARK", "🌙 다크 모드 (Night Oasis)", "눈이 편안한 깊은 밤의 오아시스 딥그린"),
+                Triple("SYSTEM", "⚙️ 시스템 설정 동기화", "기기 운영체제 설정에 따라 자동 전환")
+            )
+
             AlertDialog(
-                onDismissRequest = { showWidgetGuideDialog = false },
-                title = { Text("홈 화면 위젯 설정 안내", fontWeight = FontWeight.Bold) },
+                onDismissRequest = { showThemeDialog = false },
+                title = { Text("화면 테마 설정", fontWeight = FontWeight.Bold) },
                 text = {
-                    Column {
-                        Text(
-                            text = "앱을 열지 않고도 스마트폰 바탕화면에서 바로 공복 진행률과 대사 단계를 확인하세요.\n\n1. 스마트폰 홈 화면의 빈 공간을 길게 누릅니다.\n2. 나타나는 메뉴에서 [위젯]을 선택합니다.\n3. 목록에서 '오아단'을 찾아 원하는 위젯을 홈 화면으로 끌어다 놓습니다.\n\n• 2x2 위젯: 미니 오아시스 수위 타이머\n• 4x2 위젯: 5단계 생체 대사 링 + 남은 시간",
-                            fontSize = 13.sp,
-                            color = DeepInk,
-                            lineHeight = 19.sp
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        themeOptions.forEach { (mode, title, desc) ->
+                            val isSelected = preferences.themeMode == mode
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                                    .clickable {
+                                        onUpdateThemeMode(mode)
+                                        showThemeDialog = false
+                                        val toastMsg = when (mode) {
+                                            "DARK" -> "다크 모드로 전환되었습니다."
+                                            "SYSTEM" -> "시스템 테마와 동기화됩니다."
+                                            else -> "라이트 모드로 전환되었습니다."
+                                        }
+                                        Toast.makeText(context, toastMsg, Toast.LENGTH_SHORT).show()
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = title,
+                                        fontSize = 14.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = desc,
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
                     }
                 },
                 confirmButton = {
-                    Button(
-                        onClick = { showWidgetGuideDialog = false },
-                        colors = ButtonDefaults.buttonColors(containerColor = OasisTeal)
-                    ) {
-                        Text("확인")
+                    TextButton(onClick = { showThemeDialog = false }) {
+                        Text("닫기", color = MaterialTheme.colorScheme.primary)
                     }
                 }
             )
@@ -499,7 +572,7 @@ private fun SettingsSectionHeader(title: String) {
         text = title,
         fontSize = 13.sp,
         fontWeight = FontWeight.Bold,
-        color = Stone,
+        color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
     )
 }
@@ -510,7 +583,7 @@ private fun SettingsCard(content: @Composable () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 16.dp, vertical = 4.dp)
     ) {
         content()
@@ -520,11 +593,13 @@ private fun SettingsCard(content: @Composable () -> Unit) {
 @Composable
 private fun SettingsRow(
     title: String,
-    titleColor: Color = DeepInk,
+    titleColor: Color = Color.Unspecified,
     subtitle: String? = null,
     showArrow: Boolean = false,
     onClick: () -> Unit = {}
 ) {
+    val finalTitleColor = if (titleColor == Color.Unspecified) MaterialTheme.colorScheme.onSurface else titleColor
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -534,17 +609,17 @@ private fun SettingsRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = titleColor)
+            Text(text = title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = finalTitleColor)
             if (subtitle != null) {
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(text = subtitle, fontSize = 12.sp, color = Stone)
+                Text(text = subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         if (showArrow) {
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = Stone,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -564,11 +639,14 @@ private fun SettingsToggleRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = title, fontSize = 14.sp, color = DeepInk, modifier = Modifier.weight(1f))
+        Text(text = title, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(checkedThumbColor = OasisTeal)
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = OasisTeal
+            )
         )
     }
 }

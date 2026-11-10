@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,6 +36,7 @@ import kr.co.oadan.domain.MetabolicStage
 import kr.co.oadan.ui.theme.DeepInk
 import kr.co.oadan.ui.theme.Dune
 import kr.co.oadan.ui.theme.OasisTeal
+import kr.co.oadan.ui.theme.Sand
 import kr.co.oadan.ui.theme.StageDesert
 import kr.co.oadan.ui.theme.StageLagoon
 import kr.co.oadan.ui.theme.StagePalm
@@ -49,7 +52,7 @@ import kotlin.math.sin
 fun OasisTimer(
     timerState: FastingTimerState,
     modifier: Modifier = Modifier,
-    isDark: Boolean = isSystemInDarkTheme()
+    isDark: Boolean = MaterialTheme.colorScheme.background != Sand
 ) {
     val animatedProgress by animateFloatAsState(
         targetValue = timerState.progressRatio.coerceAtMost(1.0f),
@@ -179,23 +182,25 @@ fun OasisTimer(
             }
         }
 
-        // 중앙 읽기 텍스트
+        // 중앙 읽기 텍스트 (시인성 및 시각적 균형을 위해 살짝 상단으로 오프셋)
         Column(
+            modifier = Modifier.offset(y = (-6).dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "경과 시간",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = if (isDark) Color(0xFFA3B1AD) else Stone
+                color = if (isDark) Color(0xFFC0D2CD) else Stone,
+                letterSpacing = 0.5.sp
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = timerState.formattedElapsed,
-                fontSize = 44.sp,
-                fontWeight = FontWeight.Light,
-                color = if (isDark) Color(0xFFE6EFEC) else DeepInk,
-                letterSpacing = 0.sp,
+                fontSize = 42.sp,
+                fontWeight = FontWeight.Normal,
+                color = if (isDark) Color(0xFFFFFFFF) else DeepInk,
+                letterSpacing = (-0.5).sp,
                 style = TextStyle(fontFeatureSettings = "tnum")
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -203,13 +208,14 @@ fun OasisTimer(
                 Text(
                     text = "목표까지 " + timerState.formattedRemaining,
                     fontSize = 13.sp,
-                    color = if (isDark) Color(0xFFA3B1AD) else Stone
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isDark) OasisTeal.copy(alpha = 0.95f) else OasisTeal
                 )
             } else {
                 Text(
                     text = "🎉 목표 달성! 초과 달성 중",
                     fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     color = SunsetCoral
                 )
             }
@@ -253,32 +259,32 @@ private fun DrawScope.drawOasisScene(
         }
         drawRect(brush = skyBrush, topLeft = Offset(left, top), size = Size(w, w))
 
-        // 2. 해 또는 달
+        // 2. 해 또는 달 (우측 상단으로 이동하여 중앙 텍스트 영역 침범 방지)
         if (isDark) {
             // 달
-            val moonCenter = Offset(center.x + radius * 0.45f, center.y - radius * 0.5f)
-            drawCircle(color = Color(0xFFF2E3C2), radius = 12.dp.toPx(), center = moonCenter)
-            drawCircle(color = Color(0xFF1D3B40), radius = 10.dp.toPx(), center = Offset(moonCenter.x + 4.dp.toPx(), moonCenter.y - 2.dp.toPx()))
+            val moonCenter = Offset(center.x + radius * 0.55f, center.y - radius * 0.52f)
+            drawCircle(color = Color(0xFFF2E3C2), radius = 11.dp.toPx(), center = moonCenter)
+            drawCircle(color = Color(0xFF1D3B40), radius = 9.dp.toPx(), center = Offset(moonCenter.x + 3.5.dp.toPx(), moonCenter.y - 1.5.dp.toPx()))
 
             // 작은 별들
             drawCircle(color = Color(0xFFE6EFEC), radius = 1.5f, center = Offset(center.x - radius * 0.5f, center.y - radius * 0.4f))
             drawCircle(color = Color(0xFFE6EFEC), radius = 1.2f, center = Offset(center.x - radius * 0.2f, center.y - radius * 0.6f))
-            drawCircle(color = Color(0xFFE6EFEC), radius = 1.5f, center = Offset(center.x + radius * 0.1f, center.y - radius * 0.35f))
+            drawCircle(color = Color(0xFFE6EFEC), radius = 1.5f, center = Offset(center.x + radius * 0.1f, center.y - radius * 0.45f))
         } else {
             // 태양
-            val sunCenter = Offset(center.x + radius * 0.45f, center.y - radius * 0.45f)
-            drawCircle(color = Color(0x33F8CFA0), radius = 24.dp.toPx(), center = sunCenter)
-            drawCircle(color = Color(0xAAF8CFA0), radius = 14.dp.toPx(), center = sunCenter)
+            val sunCenter = Offset(center.x + radius * 0.55f, center.y - radius * 0.50f)
+            drawCircle(color = Color(0x33F8CFA0), radius = 20.dp.toPx(), center = sunCenter)
+            drawCircle(color = Color(0xAAF8CFA0), radius = 12.dp.toPx(), center = sunCenter)
         }
 
-        // 3. 모래 언덕 (Dune 1 & Dune 2)
+        // 3. 모래 언덕 (Dune 1 & Dune 2) - 중앙 텍스트 아래로 높이를 대폭 낮춰 가독성 확보
         val dune2Path = Path().apply {
-            val duneTopY = center.y + radius * 0.3f
-            moveTo(left, duneTopY)
+            val duneTopY = center.y + radius * 0.50f
+            moveTo(left, duneTopY + 8f)
             cubicTo(
-                left + w * 0.3f, duneTopY - 18f,
-                left + w * 0.6f, duneTopY + 12f,
-                left + w, duneTopY - 10f
+                left + w * 0.35f, duneTopY - 10f,
+                left + w * 0.7f, duneTopY + 12f,
+                left + w, duneTopY
             )
             lineTo(left + w, top + w)
             lineTo(left, top + w)
@@ -288,12 +294,12 @@ private fun DrawScope.drawOasisScene(
         drawPath(dune2Path, color = dune2Color)
 
         val dune1Path = Path().apply {
-            val duneTopY = center.y + radius * 0.45f
-            moveTo(left, duneTopY)
+            val duneTopY = center.y + radius * 0.62f
+            moveTo(left, duneTopY - 6f)
             cubicTo(
-                left + w * 0.35f, duneTopY - 14f,
-                left + w * 0.7f, duneTopY + 10f,
-                left + w, duneTopY - 6f
+                left + w * 0.3f, duneTopY + 8f,
+                left + w * 0.65f, duneTopY - 8f,
+                left + w, duneTopY + 4f
             )
             lineTo(left + w, top + w)
             lineTo(left, top + w)
@@ -302,12 +308,11 @@ private fun DrawScope.drawOasisScene(
         val dune1Color = if (isDark) Color(0xFF34494A) else Color(0xFFE3C79A)
         drawPath(dune1Path, color = dune1Color)
 
-        // 4. 오아시스 샘물 (진행률에 따라 수위가 차오름)
-        // progress: 0%일 때는 아주 작은 웅덩이 -> 100%일 때는 가득 찬 호수
+        // 4. 오아시스 샘물 (하단으로 배치하여 중앙 텍스트 간섭 배제)
         val waterProgress = progress.coerceIn(0.1f, 1.0f)
-        val waterRx = radius * (0.35f + 0.45f * waterProgress)
-        val waterRy = radius * (0.08f + 0.16f * waterProgress)
-        val waterCenterY = center.y + radius * (0.65f - 0.08f * waterProgress)
+        val waterRx = radius * (0.35f + 0.35f * waterProgress)
+        val waterRy = radius * (0.06f + 0.12f * waterProgress)
+        val waterCenterY = center.y + radius * (0.76f - 0.04f * waterProgress)
 
         val waterBrush = if (isDark) {
             Brush.verticalGradient(
@@ -347,16 +352,28 @@ private fun DrawScope.drawOasisScene(
             cap = StrokeCap.Round
         )
 
-        // 5. 야자수 실루엣 (오른쪽 및 왼쪽에 배치)
+        // 5. 야자수 실루엣 (좌우 하단 가장자리로 이동 및 스케일 축소하여 텍스트 영역을 침범하지 않음)
         drawPalmTree(
-            trunkBase = Offset(center.x + radius * 0.45f, center.y + radius * 0.52f),
-            scale = 0.85f,
+            trunkBase = Offset(center.x + radius * 0.60f, center.y + radius * 0.68f),
+            scale = 0.46f,
             isDark = isDark
         )
         drawPalmTree(
-            trunkBase = Offset(center.x - radius * 0.5f, center.y + radius * 0.56f),
-            scale = 0.65f,
+            trunkBase = Offset(center.x - radius * 0.62f, center.y + radius * 0.72f),
+            scale = 0.38f,
             isDark = isDark
+        )
+
+        // 6. 중앙 텍스트 영역 시인성 극대화를 위한 부드러운 배경 헤일로 (Soft Radial Glow Scrim)
+        val haloColor = if (isDark) Color(0xCC162B30) else Color(0xE6FFFDF8)
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(haloColor, haloColor.copy(alpha = 0.5f), Color.Transparent),
+                center = Offset(center.x, center.y - 8.dp.toPx()),
+                radius = radius * 0.65f
+            ),
+            center = Offset(center.x, center.y - 8.dp.toPx()),
+            radius = radius * 0.65f
         )
     }
 }

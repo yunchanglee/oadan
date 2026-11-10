@@ -92,12 +92,8 @@ class OadanViewModel(application: Application) : AndroidViewModel(application) {
             fastingRepository.startFasting(protocol, targetHours)
             preferencesRepository.setProtocol(protocol, targetHours)
 
-            // 알람 예약
-            notificationManager.scheduleExactAlarm(
-                targetEndTime,
-                FastingNotificationManager.ACTION_COMPLETION_ALERT,
-                101
-            )
+            // 알람 예약 (완료, 중간 응원, 초과 달성 응원)
+            scheduleFastingAlarms(now, targetEndTime, targetHours)
 
             // 홈 위젯 업데이트
             FastingAppWidgetProvider.updateAllWidgets(getApplication())
@@ -108,7 +104,7 @@ class OadanViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             fastingRepository.endFasting(isPartial = isPartial)
             notificationManager.dismissOngoingNotification()
-            notificationManager.cancelAlarms(listOf(101))
+            notificationManager.cancelAlarms(listOf(101, 102, 103, 104))
             FastingAppWidgetProvider.updateAllWidgets(getApplication())
         }
     }
@@ -116,14 +112,8 @@ class OadanViewModel(application: Application) : AndroidViewModel(application) {
     fun updateSessionTimes(sessionId: Long, newStart: Long, newTargetEnd: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             fastingRepository.updateSessionTimes(sessionId, newStart, newTargetEnd)
-            notificationManager.cancelAlarms(listOf(101))
-            if (newTargetEnd > System.currentTimeMillis()) {
-                notificationManager.scheduleExactAlarm(
-                    newTargetEnd,
-                    FastingNotificationManager.ACTION_COMPLETION_ALERT,
-                    101
-                )
-            }
+            val durationHours = ((newTargetEnd - newStart) / (3600f * 1000f)).coerceAtLeast(1f)
+            scheduleFastingAlarms(newStart, newTargetEnd, durationHours)
             FastingAppWidgetProvider.updateAllWidgets(getApplication())
         }
     }
@@ -133,16 +123,53 @@ class OadanViewModel(application: Application) : AndroidViewModel(application) {
             fastingRepository.updateActiveSessionTarget(newTargetHours)
             val active = fastingRepository.getActiveSessionOnce()
             if (active != null) {
-                notificationManager.cancelAlarms(listOf(101))
-                if (active.targetEndTimeUtc > System.currentTimeMillis()) {
-                    notificationManager.scheduleExactAlarm(
-                        active.targetEndTimeUtc,
-                        FastingNotificationManager.ACTION_COMPLETION_ALERT,
-                        101
-                    )
-                }
+                scheduleFastingAlarms(active.startTimeUtc, active.targetEndTimeUtc, newTargetHours)
             }
             FastingAppWidgetProvider.updateAllWidgets(getApplication())
+        }
+    }
+
+    private fun scheduleFastingAlarms(startTime: Long, targetEndTime: Long, targetHours: Float) {
+        val now = System.currentTimeMillis()
+        notificationManager.cancelAlarms(listOf(101, 102, 103, 104))
+
+        // 1. 목표 완료 알람
+        if (targetEndTime > now) {
+            notificationManager.scheduleExactAlarm(
+                targetEndTime,
+                FastingNotificationManager.ACTION_COMPLETION_ALERT,
+                101
+            )
+        }
+
+        // 2. 공복 진행 중 격려 알람 (중간 지점)
+        val midTime = startTime + (targetHours * 0.5f * 3600f * 1000f).toLong()
+        if (midTime > now && midTime < targetEndTime) {
+            notificationManager.scheduleExactAlarm(
+                midTime,
+                FastingNotificationManager.ACTION_MID_FAST_CHEER,
+                102
+            )
+        }
+
+        // 3. 목표 초과 달성 1시간 후 응원 알람
+        val overachieveTime1 = targetEndTime + 3600000L
+        if (overachieveTime1 > now) {
+            notificationManager.scheduleExactAlarm(
+                overachieveTime1,
+                FastingNotificationManager.ACTION_OVERACHIEVE_CHEER,
+                103
+            )
+        }
+
+        // 4. 목표 초과 달성 3시간 후 응원 알람
+        val overachieveTime2 = targetEndTime + 3 * 3600000L
+        if (overachieveTime2 > now) {
+            notificationManager.scheduleExactAlarm(
+                overachieveTime2,
+                FastingNotificationManager.ACTION_OVERACHIEVE_CHEER,
+                104
+            )
         }
     }
 
@@ -167,6 +194,12 @@ class OadanViewModel(application: Application) : AndroidViewModel(application) {
                 conditionTag = conditionTag,
                 memo = memo
             )
+        }
+    }
+
+    fun saveUserBodyProfile(heightCm: Float, gender: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            preferencesRepository.setUserBodyProfile(heightCm, gender)
         }
     }
 
@@ -208,6 +241,12 @@ class OadanViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updateCheerNotification(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setCheerNotification(enabled)
+        }
+    }
+
     fun setDailyWaterGoal(goalMl: Int) {
         viewModelScope.launch {
             preferencesRepository.setDailyWaterGoal(goalMl)
@@ -217,6 +256,12 @@ class OadanViewModel(application: Application) : AndroidViewModel(application) {
     fun setUseDayOfWeekSchedule(use: Boolean) {
         viewModelScope.launch {
             preferencesRepository.setUseDayOfWeekSchedule(use)
+        }
+    }
+
+    fun setThemeMode(mode: String) {
+        viewModelScope.launch {
+            preferencesRepository.setThemeMode(mode)
         }
     }
 
