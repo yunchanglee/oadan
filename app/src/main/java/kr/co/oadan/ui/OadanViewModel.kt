@@ -36,7 +36,8 @@ class OadanViewModel(application: Application) : AndroidViewModel(application) {
         database.waterLogDao(),
         database.conditionLogDao(),
         database.mealLogDao(),
-        preferencesRepository
+        preferencesRepository,
+        application.cacheDir
     )
     private val notificationManager = FastingNotificationManager(application)
 
@@ -59,6 +60,15 @@ class OadanViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val recentSessions: StateFlow<List<FastSession>> = fastingRepository.getRecentSessions(30)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val allSessions: StateFlow<List<FastSession>> = fastingRepository.getAllSessions()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val conditionLogs: StateFlow<List<kr.co.oadan.data.model.ConditionLog>> = conditionRepository.getAllLogs()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val allWaterLogs: StateFlow<List<kr.co.oadan.data.model.WaterLog>> = waterRepository.getAllLogs()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val streakDays: StateFlow<Int> = fastingRepository.calculateStreak()
@@ -195,6 +205,18 @@ class OadanViewModel(application: Application) : AndroidViewModel(application) {
     fun updateNotifications(start: Boolean, end: Boolean, stage: Boolean) {
         viewModelScope.launch {
             preferencesRepository.setNotifications(start, end, stage)
+        }
+    }
+
+    fun setDailyWaterGoal(goalMl: Int) {
+        viewModelScope.launch {
+            preferencesRepository.setDailyWaterGoal(goalMl)
+        }
+    }
+
+    fun setUseDayOfWeekSchedule(use: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setUseDayOfWeekSchedule(use)
         }
     }
 

@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -22,13 +24,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -105,6 +110,9 @@ fun PlanSelectScreen(
         mutableStateOf(PRESET_PLANS.find { it.name == currentProtocol } ?: PRESET_PLANS[1])
     }
     var useSchedule by remember { mutableStateOf(false) }
+    var showCustomDialog by remember { mutableStateOf(false) }
+    var customHoursText by remember { mutableStateOf("16") }
+    var customError by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier
@@ -114,9 +122,10 @@ fun PlanSelectScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
-                .padding(top = 16.dp, bottom = 100.dp)
+                .padding(top = 16.dp, bottom = 120.dp)
         ) {
             // App Bar
             Row(
@@ -186,13 +195,16 @@ fun PlanSelectScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 추가 옵션 칩 (OMAD, 5:2)
+            // 추가 옵션 칩 (OMAD, 5:2, 직접 설정 1~72시간)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ChipOption(text = "OMAD (23:1)", isSelected = selectedPlan.name == "OMAD") {
                     selectedPlan = FastingPlan("OMAD", 23f, "1일 1식", 4, "순한 보식", "맑은 채수로 시작하세요")
                 }
                 ChipOption(text = "5:2 플랜", isSelected = selectedPlan.name == "5:2") {
                     selectedPlan = FastingPlan("5:2", 24f, "주 2회 간헐적 단식", 4, "회복 보식", "2단계 회복식을 준수하세요")
+                }
+                ChipOption(text = "직접 설정", isSelected = selectedPlan.name.startsWith("커스텀")) {
+                    showCustomDialog = true
                 }
             }
 
@@ -254,6 +266,7 @@ fun PlanSelectScreen(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .background(Sand)
+                .navigationBarsPadding()
                 .padding(20.dp)
         ) {
             Button(
@@ -272,6 +285,67 @@ fun PlanSelectScreen(
                     fontWeight = FontWeight.Bold
                 )
             }
+        }
+
+        if (showCustomDialog) {
+            AlertDialog(
+                onDismissRequest = { showCustomDialog = false },
+                title = { Text("목표 공복 시간 직접 설정", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        Text("1시간부터 최대 72시간까지 설정할 수 있어요.", fontSize = 13.sp, color = Stone)
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedTextField(
+                            value = customHoursText,
+                            onValueChange = {
+                                customHoursText = it.filter { c -> c.isDigit() }
+                                customError = null
+                            },
+                            label = { Text("목표 시간 (1 ~ 72시간)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        if (customError != null) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(text = customError!!, color = Color(0xFFC2453D), fontSize = 12.sp)
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val hours = customHoursText.toIntOrNull()
+                            if (hours == null || hours !in 1..72) {
+                                customError = "안전한 공복을 위해 1~72시간 사이로 입력해 주세요."
+                                return@Button
+                            }
+                            val stage = when {
+                                hours < 14 -> "일반 보식"
+                                hours < 18 -> "부드러운 보식"
+                                hours < 24 -> "순한 보식"
+                                else -> "회복 보식"
+                            }
+                            selectedPlan = FastingPlan(
+                                name = "커스텀 (${hours}h)",
+                                targetHours = hours.toFloat(),
+                                subtitle = "사용자 정의",
+                                difficultyDots = (hours / 6).coerceIn(1, 4),
+                                recommendedBreakFastStage = stage,
+                                breakFastTip = "공복 시간에 맞춘 부드러운 자연식으로 속을 깨워주세요"
+                            )
+                            showCustomDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = OasisTeal)
+                    ) {
+                        Text("적용하기")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCustomDialog = false }) {
+                        Text("취소", color = Stone)
+                    }
+                }
+            )
         }
     }
 }

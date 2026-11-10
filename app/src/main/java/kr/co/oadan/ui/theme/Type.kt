@@ -13,21 +13,24 @@ val OadanTypography = Typography(
         fontWeight = FontWeight.Light,
         fontSize = 56.sp,
         lineHeight = 64.sp,
-        letterSpacing = 0.sp
+        letterSpacing = 0.sp,
+        fontFeatureSettings = "tnum"
     ),
     displayMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.SemiBold,
         fontSize = 44.sp,
         lineHeight = 52.sp,
-        letterSpacing = 0.sp
+        letterSpacing = 0.sp,
+        fontFeatureSettings = "tnum"
     ),
     displaySmall = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.SemiBold,
         fontSize = 36.sp,
         lineHeight = 44.sp,
-        letterSpacing = 0.sp
+        letterSpacing = 0.sp,
+        fontFeatureSettings = "tnum"
     ),
     headlineLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,

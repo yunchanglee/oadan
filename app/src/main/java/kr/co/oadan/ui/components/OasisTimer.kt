@@ -23,6 +23,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,8 +57,17 @@ fun OasisTimer(
         label = "progressAnim"
     )
 
+    val elapsedMin = (timerState.elapsedMillis / 60000L).toInt()
+    val elapsedHoursPart = elapsedMin / 60
+    val elapsedMinsPart = elapsedMin % 60
+    val a11yDescription = "단식 ${elapsedHoursPart}시간 ${elapsedMinsPart}분 경과, 목표까지 ${timerState.formattedRemaining}, ${timerState.currentStage.stageName} 단계"
+
     Box(
-        modifier = modifier.size(280.dp),
+        modifier = modifier
+            .size(280.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = a11yDescription
+            },
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.size(280.dp)) {
@@ -183,7 +195,8 @@ fun OasisTimer(
                 fontSize = 44.sp,
                 fontWeight = FontWeight.Light,
                 color = if (isDark) Color(0xFFE6EFEC) else DeepInk,
-                letterSpacing = 0.sp
+                letterSpacing = 0.sp,
+                style = TextStyle(fontFeatureSettings = "tnum")
             )
             Spacer(modifier = Modifier.height(4.dp))
             if (timerState.remainingMillis > 0) {

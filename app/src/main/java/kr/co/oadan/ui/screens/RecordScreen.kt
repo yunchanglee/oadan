@@ -1,5 +1,6 @@
 package kr.co.oadan.ui.screens
 
+import android.content.res.Configuration
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -32,10 +34,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kr.co.oadan.data.model.ConditionLog
 import kr.co.oadan.ui.components.SafetyBottomSheet
 import kr.co.oadan.ui.theme.DeepInk
 import kr.co.oadan.ui.theme.Dune
@@ -44,11 +48,29 @@ import kr.co.oadan.ui.theme.OasisTeal
 import kr.co.oadan.ui.theme.Pebble
 import kr.co.oadan.ui.theme.Sand
 import kr.co.oadan.ui.theme.Stone
+import kr.co.oadan.ui.theme.Teal700
+
+data class ConditionOption(
+    val emoji: String,
+    val name: String,
+    val isWarning: Boolean
+) {
+    val fullTag: String get() = "$emoji $name"
+}
+
+val conditionOptions = listOf(
+    ConditionOption("😊", "상쾌", false),
+    ConditionOption("😐", "보통", false),
+    ConditionOption("😣", "배고픔", false),
+    ConditionOption("🤕", "두통", true),
+    ConditionOption("💫", "어지러움", true)
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecordScreen(
     lastWeightKg: Float? = null,
+    recentLogs: List<ConditionLog> = emptyList(),
     onSaveRecord: (
         weightKg: Float?,
         muscleKg: Float?,
@@ -69,7 +91,8 @@ fun RecordScreen(
     var showSafetySheet by remember { mutableStateOf(false) }
     val safetySheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val conditions = listOf("😊 상쾌", "😐 보통", "😣 배고픔", "🤕 두통", "💫 어지러움")
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     Box(
         modifier = Modifier
@@ -81,7 +104,7 @@ fun RecordScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
-                .padding(top = 16.dp, bottom = 100.dp)
+                .padding(top = 16.dp, bottom = 140.dp)
         ) {
             Text(
                 text = "신체 & 컨디션 기록",
@@ -111,44 +134,73 @@ fun RecordScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                conditions.forEach { tag ->
-                    val isSelected = selectedCondition == tag
-                    val isWarning = tag == "🤕 두통" || tag == "💫 어지러움"
+                conditionOptions.forEach { option ->
+                    val isSelected = selectedCondition == option.fullTag || selectedCondition?.contains(option.name) == true
 
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
+                            .weight(1f)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
                             .background(
                                 if (isSelected) {
-                                    if (isWarning) Color(0xFFFBE9E7) else OasisTeal
+                                    if (option.isWarning) Color(0xFFFBE9E7) else OasisTeal
                                 } else Color.White
                             )
                             .border(
-                                width = if (isSelected && isWarning) 1.5.dp else 1.dp,
+                                width = if (isSelected) 1.5.dp else 1.dp,
                                 color = if (isSelected) {
-                                    if (isWarning) ErrorRed else OasisTeal
+                                    if (option.isWarning) ErrorRed else OasisTeal
                                 } else Pebble,
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(12.dp)
                             )
                             .clickable {
-                                selectedCondition = tag
+                                selectedCondition = option.fullTag
                                 // 어지러움이나 두통 선택 시 SafetyBottomSheet 자동 노출 (NFR-06)
-                                if (isWarning) {
+                                if (option.isWarning) {
                                     showSafetySheet = true
                                 }
-                            }
-                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                            },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = tag,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = if (isSelected) {
-                                if (isWarning) Color(0xFF9E342D) else Color.White
-                            } else DeepInk
-                        )
+                        if (isLandscape) {
+                            // 가로 화면에서는 아이콘 + 텍스트 표시
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(text = option.emoji, fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = option.name,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) {
+                                        if (option.isWarning) Color(0xFF9E342D) else Color.White
+                                    } else DeepInk
+                                )
+                            }
+                        } else {
+                            // 세로 화면에서는 아이콘(이모지)으로만 깔끔하게 표시하여 긴 텍스트 줄바꿈 방지
+                            Text(
+                                text = option.emoji,
+                                fontSize = 22.sp
+                            )
+                        }
                     }
                 }
+            }
+
+            // 세로 모드일 때 선택된 컨디션 상태 라벨 안내
+            val currentSelectedOption = conditionOptions.find { selectedCondition == it.fullTag || selectedCondition?.contains(it.name) == true }
+            if (currentSelectedOption != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "선택된 컨디션: ${currentSelectedOption.emoji} ${currentSelectedOption.name}",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (currentSelectedOption.isWarning) ErrorRed else Teal700
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -218,15 +270,100 @@ fun RecordScreen(
                 maxLines = 5,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            // 최근 기록 히스토리 (최근 5건)
+            if (recentLogs.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = "최근 기록 내역",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DeepInk
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    recentLogs.take(5).forEach { log ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.White)
+                                .padding(14.dp)
+                        ) {
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = log.date,
+                                        fontSize = 12.sp,
+                                        color = Stone,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    log.conditionTag?.let { tag ->
+                                        Text(
+                                            text = tag,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (tag.contains("두통") || tag.contains("어지러움")) ErrorRed else Teal700
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    log.weightKg?.let { w ->
+                                        Text(
+                                            text = "${w}kg",
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = DeepInk
+                                        )
+                                    }
+                                    if (log.skeletalMuscleKg != null || log.bodyFatPercent != null) {
+                                        Text(
+                                            text = "골격근: ${log.skeletalMuscleKg ?: "-"}kg · 체지방: ${log.bodyFatPercent ?: "-"}%",
+                                            fontSize = 12.sp,
+                                            color = Stone
+                                        )
+                                    }
+                                }
+
+                                if (!log.memo.isNullOrBlank()) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = log.memo,
+                                        fontSize = 12.sp,
+                                        color = Stone,
+                                        maxLines = 2
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        // 하단 저장 CTA
+        // 하단 저장 CTA (네비게이션 바 패딩 적용으로 3버튼/제스처 소프트키 겹침 방지)
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .background(Sand)
-                .padding(20.dp)
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 14.dp)
         ) {
             Button(
                 onClick = {

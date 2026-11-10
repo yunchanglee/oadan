@@ -35,7 +35,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kr.co.oadan.data.repository.UserPreferences
 import kr.co.oadan.ui.theme.DeepInk
+import kr.co.oadan.ui.theme.Dune
 import kr.co.oadan.ui.theme.ErrorRed
 import kr.co.oadan.ui.theme.OasisTeal
 import kr.co.oadan.ui.theme.Pebble
@@ -58,15 +61,21 @@ fun MySettingsScreen(
     preferences: UserPreferences,
     onUpdateNotifications: (start: Boolean, end: Boolean, stage: Boolean) -> Unit,
     onNavigateToPlanSelect: () -> Unit,
+    onUpdateWaterGoal: (Int) -> Unit = {},
+    onUpdateSchedule: (Boolean) -> Unit = {},
     onExportJson: suspend () -> String,
     onImportJson: suspend (String) -> Boolean,
     onClearAllData: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
     var showDisclaimerDialog by remember { mutableStateOf(false) }
+    var showWaterGoalDialog by remember { mutableStateOf(false) }
+    var showScheduleDialog by remember { mutableStateOf(false) }
+    var showWidgetGuideDialog by remember { mutableStateOf(false) }
     var importText by remember { mutableStateOf("") }
 
     Box(
@@ -79,7 +88,7 @@ fun MySettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
-                .padding(top = 16.dp, bottom = 100.dp)
+                .padding(top = 16.dp, bottom = 120.dp)
         ) {
             Text(
                 text = "마이 설정",
@@ -96,14 +105,28 @@ fun MySettingsScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 1. 단식 플랜 섹션
-            SettingsSectionHeader("단식 설정")
+            // 1. 단식 및 수분 목표 설정 섹션 (FR-01, FR-04)
+            SettingsSectionHeader("단식 및 수분 목표")
             SettingsCard {
                 SettingsRow(
                     title = "현재 단식 플랜",
-                    subtitle = preferences.defaultProtocol,
+                    subtitle = "${preferences.defaultProtocol} (${preferences.targetFastingHours.toInt()}시간)",
                     showArrow = true,
                     onClick = onNavigateToPlanSelect
+                )
+                Divider(color = Pebble.copy(alpha = 0.5f))
+                SettingsRow(
+                    title = "요일별 단식 스케줄",
+                    subtitle = if (preferences.useDayOfWeekSchedule) "요일별 맞춤 플랜 사용 중" else "매일 동일한 플랜 적용 중",
+                    showArrow = true,
+                    onClick = { showScheduleDialog = true }
+                )
+                Divider(color = Pebble.copy(alpha = 0.5f))
+                SettingsRow(
+                    title = "일일 수분 목표",
+                    subtitle = "${preferences.dailyWaterGoalMl}ml (추천: 2,000ml)",
+                    showArrow = true,
+                    onClick = { showWaterGoalDialog = true }
                 )
             }
 
@@ -139,20 +162,36 @@ fun MySettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 3. 데이터 관리 & 백업 (NFR-04, NFR-05, NFR-07)
+            // 3. 위젯 및 외부 연동 (FR-07)
+            SettingsSectionHeader("위젯 및 웰니스 연동")
+            SettingsCard {
+                SettingsRow(
+                    title = "홈 화면 위젯 안내",
+                    subtitle = "오아시스 타이머 (2x2) · 대사 단계 링 (4x2)",
+                    showArrow = true,
+                    onClick = { showWidgetGuideDialog = true }
+                )
+                Divider(color = Pebble.copy(alpha = 0.5f))
+                SettingsRow(
+                    title = "헬스 커넥트 (Health Connect)",
+                    subtitle = "삼성 헬스 · 구글 핏 연동 준비 중 (v2.0)"
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 4. 데이터 관리 & 백업 (NFR-04, NFR-05, NFR-07)
             SettingsSectionHeader("데이터 백업 및 복원 (Local-First)")
             SettingsCard {
                 SettingsRow(
                     title = "기록 데이터 내보내기 (JSON 백업)",
-                    subtitle = "단식, 수분, 컨디션, 보식 기록을 텍스트 파일로 저장",
+                    subtitle = "단식, 수분, 컨디션, 보식 기록을 클립보드에 JSON으로 복사",
                     onClick = {
-                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).run {
-                            // JSON 내보내기 및 클립보드 복사
-                            kotlinx.coroutines.MainScope().run {
-                                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).run {
-                                    // MainScope에서 처리
-                                }
-                            }
+                        scope.launch {
+                            val json = onExportJson()
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("oadan_backup_json", json))
+                            Toast.makeText(context, "백업 JSON 데이터가 클립보드에 복사되었습니다.", Toast.LENGTH_SHORT).show()
                         }
                     }
                 )
@@ -166,7 +205,7 @@ fun MySettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. 안전 & 정책 안내 (NFR-06, NFR-07)
+            // 5. 안전 & 정책 안내 (NFR-06, NFR-07)
             SettingsSectionHeader("안내 및 개인정보")
             SettingsCard {
                 SettingsRow(
@@ -257,8 +296,15 @@ fun MySettingsScreen(
                 confirmButton = {
                     Button(
                         onClick = {
-                            // Coroutine import
-                            showImportDialog = false
+                            scope.launch {
+                                val ok = onImportJson(importText)
+                                val msg = if (ok) "백업 데이터가 복원되었습니다." else "올바른 JSON 백업 형식이 아닙니다."
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                if (ok) {
+                                    importText = ""
+                                    showImportDialog = false
+                                }
+                            }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = OasisTeal)
                     ) {
@@ -291,6 +337,152 @@ fun MySettingsScreen(
                 confirmButton = {
                     Button(
                         onClick = { showDisclaimerDialog = false },
+                        colors = ButtonDefaults.buttonColors(containerColor = OasisTeal)
+                    ) {
+                        Text("확인")
+                    }
+                }
+            )
+        }
+
+        // 일일 수분 목표 설정 다이얼로그 (FR-04)
+        if (showWaterGoalDialog) {
+            var selectedGoal by remember { mutableStateOf(preferences.dailyWaterGoalMl.toString()) }
+            val presets = listOf(1500, 1800, 2000, 2500)
+
+            AlertDialog(
+                onDismissRequest = { showWaterGoalDialog = false },
+                title = { Text("일일 수분 목표 설정", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        Text("공복 중 충분한 수분 섭취는 탈수를 막고 대사를 원활하게 합니다 💧", fontSize = 13.sp, color = Stone)
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            presets.forEach { preset ->
+                                val isSelected = selectedGoal == preset.toString()
+                                Button(
+                                    onClick = { selectedGoal = preset.toString() },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isSelected) OasisTeal else Dune,
+                                        contentColor = if (isSelected) Color.White else DeepInk
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 4.dp, horizontal = 2.dp)
+                                ) {
+                                    Text("${preset}ml", fontSize = 11.sp)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = selectedGoal,
+                            onValueChange = { selectedGoal = it },
+                            label = { Text("직접 입력 (ml)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val goal = selectedGoal.toIntOrNull() ?: 2000
+                            onUpdateWaterGoal(goal)
+                            Toast.makeText(context, "수분 목표가 ${goal}ml로 변경되었습니다.", Toast.LENGTH_SHORT).show()
+                            showWaterGoalDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = OasisTeal)
+                    ) {
+                        Text("저장")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showWaterGoalDialog = false }) {
+                        Text("취소", color = Stone)
+                    }
+                }
+            )
+        }
+
+        // 요일별 단식 스케줄 설정 다이얼로그 (FR-01)
+        if (showScheduleDialog) {
+            var useSchedule by remember { mutableStateOf(preferences.useDayOfWeekSchedule) }
+
+            AlertDialog(
+                onDismissRequest = { showScheduleDialog = false },
+                title = { Text("요일별 단식 스케줄", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("요일별 맞춤 플랜 활성화", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = DeepInk)
+                            Switch(
+                                checked = useSchedule,
+                                onCheckedChange = { useSchedule = it },
+                                colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = OasisTeal)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = if (useSchedule) {
+                                "평일(월~금): 16:8 (공복 16시간)\n주말(토~일): 14:10 (공복 14시간 유연 플랜)\n\n바쁜 평일에는 규칙적인 16:8로 집중하고, 주말에는 가족·지인과의 식사를 위해 14:10으로 편안하게 조절합니다."
+                            } else {
+                                "현재 매일 기본 플랜(${preferences.defaultProtocol})이 적용됩니다. 스위치를 켜면 주말에 더 완만한 공복 시간으로 자동 조정됩니다."
+                            },
+                            fontSize = 13.sp,
+                            color = Stone,
+                            lineHeight = 18.sp
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            onUpdateSchedule(useSchedule)
+                            Toast.makeText(context, if (useSchedule) "요일별 스케줄이 활성화되었습니다." else "매일 동일 플랜으로 설정되었습니다.", Toast.LENGTH_SHORT).show()
+                            showScheduleDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = OasisTeal)
+                    ) {
+                        Text("적용하기")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showScheduleDialog = false }) {
+                        Text("닫기", color = Stone)
+                    }
+                }
+            )
+        }
+
+        // 위젯 안내 다이얼로그 (FR-07)
+        if (showWidgetGuideDialog) {
+            AlertDialog(
+                onDismissRequest = { showWidgetGuideDialog = false },
+                title = { Text("홈 화면 위젯 설정 안내", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        Text(
+                            text = "앱을 열지 않고도 스마트폰 바탕화면에서 바로 공복 진행률과 대사 단계를 확인하세요.\n\n1. 스마트폰 홈 화면의 빈 공간을 길게 누릅니다.\n2. 나타나는 메뉴에서 [위젯]을 선택합니다.\n3. 목록에서 '오아단'을 찾아 원하는 위젯을 홈 화면으로 끌어다 놓습니다.\n\n• 2x2 위젯: 미니 오아시스 수위 타이머\n• 4x2 위젯: 5단계 생체 대사 링 + 남은 시간",
+                            fontSize = 13.sp,
+                            color = DeepInk,
+                            lineHeight = 19.sp
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { showWidgetGuideDialog = false },
                         colors = ButtonDefaults.buttonColors(containerColor = OasisTeal)
                     ) {
                         Text("확인")
@@ -331,7 +523,7 @@ private fun SettingsRow(
     titleColor: Color = DeepInk,
     subtitle: String? = null,
     showArrow: Boolean = false,
-    onClick: () -> Unit
+    onClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier

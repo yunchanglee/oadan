@@ -119,10 +119,25 @@ class FastingAppWidgetProvider : AppWidgetProvider() {
                     views4x2.setOnClickPendingIntent(R.id.widget_btn_toggle, appPendingIntent)
                 }
 
-                appWidgetManager.updateAppWidget(widgetId, views2x2)
-                appWidgetManager.updateAppWidget(widgetId, views4x2)
+                val options = appWidgetManager.getAppWidgetOptions(widgetId)
+                val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 140)
+                if (minWidth >= 220) {
+                    appWidgetManager.updateAppWidget(widgetId, views4x2)
+                } else {
+                    appWidgetManager.updateAppWidget(widgetId, views2x2)
+                }
             }
         }
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        onUpdate(context, appWidgetManager, intArrayOf(appWidgetId))
     }
 
     companion object {

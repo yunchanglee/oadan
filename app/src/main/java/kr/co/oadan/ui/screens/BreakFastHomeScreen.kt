@@ -22,16 +22,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.ShoppingBasket
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -40,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kr.co.oadan.data.model.Recipe
@@ -47,6 +57,7 @@ import kr.co.oadan.ui.theme.DeepInk
 import kr.co.oadan.ui.theme.Dune
 import kr.co.oadan.ui.theme.OasisTeal
 import kr.co.oadan.ui.theme.Pebble
+import kr.co.oadan.ui.theme.Sand
 import kr.co.oadan.ui.theme.Stone
 import kr.co.oadan.ui.theme.Teal50
 import kr.co.oadan.ui.theme.Teal700
@@ -62,6 +73,7 @@ fun BreakFastHomeScreen(
 ) {
     var selectedFilter by remember { mutableStateOf("전체") }
     val filters = listOf("전체", "🌱 비건", "저탄수", "글루텐프리")
+    var showShoppingDialog by remember { mutableStateOf(false) }
 
     val filteredRecipes = recipes.filter { recipe ->
         when (selectedFilter) {
@@ -87,7 +99,7 @@ fun BreakFastHomeScreen(
                 .padding(horizontal = 20.dp)
                 .padding(top = 16.dp, bottom = 96.dp)
         ) {
-            // App Bar
+            // App Bar (SC-20)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -100,15 +112,31 @@ fun BreakFastHomeScreen(
                     color = DeepInk
                 )
 
-                Button(
-                    onClick = onNavigateToRecord,
-                    colors = ButtonDefaults.buttonColors(containerColor = OasisTeal),
-                    shape = RoundedCornerShape(999.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("보식 기록", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // 장보기 바구니 아이콘 (OA-04)
+                    IconButton(
+                        onClick = { showShoppingDialog = true },
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingBasket,
+                            contentDescription = "장보기 리스트",
+                            tint = OasisTeal
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    Button(
+                        onClick = onNavigateToRecord,
+                        colors = ButtonDefaults.buttonColors(containerColor = OasisTeal),
+                        shape = RoundedCornerShape(999.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("보식 기록", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
@@ -319,7 +347,148 @@ fun BreakFastHomeScreen(
                 }
             }
         }
+
+        // OA-04 오가닉 장보기 리스트 다이얼로그
+        if (showShoppingDialog) {
+            ShoppingListDialog(
+                recipes = recipes,
+                onDismiss = { showShoppingDialog = false }
+            )
+        }
     }
+}
+
+@Composable
+fun ShoppingListDialog(
+    recipes: List<Recipe>,
+    onDismiss: () -> Unit
+) {
+    // 추천 및 보식 레시피에서 주요 재료 목록 추출
+    val defaultIngredients = remember(recipes) {
+        val list = mutableListOf<String>()
+        recipes.forEach { recipe ->
+            recipe.ingredients.forEach { item ->
+                val cleaned = item.trim().replace("-", "").trim()
+                if (cleaned.isNotBlank() && !list.contains(cleaned)) {
+                    list.add(cleaned)
+                }
+            }
+        }
+        if (list.isEmpty()) {
+            listOf("유기농 두부 1모", "제철 애호박 1개", "전통 된장 1큰술", "미니 단호박 1/2개", "유기농 현미", "자른 미역 10g", "양배추 1/4통")
+        } else {
+            list.take(12)
+        }
+    }
+
+    val checkedItems = remember { mutableStateListOf<String>() }
+    val customItems = remember { mutableStateListOf<String>() }
+    var newIngredientText by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.ShoppingBasket, contentDescription = null, tint = OasisTeal)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("오가닉 장보기 리스트", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = DeepInk)
+                }
+                IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "닫기", tint = Stone)
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = "추천 보식 레시피의 자연 식재료를 장보기 전에 확인하고 체크하세요 🥬",
+                    fontSize = 12.sp,
+                    color = Stone
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                val allItems = defaultIngredients + customItems
+                allItems.forEach { item ->
+                    val isChecked = checkedItems.contains(item)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (isChecked) checkedItems.remove(item)
+                                else checkedItems.add(item)
+                            }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = isChecked,
+                            onCheckedChange = { checked ->
+                                if (checked) checkedItems.add(item)
+                                else checkedItems.remove(item)
+                            },
+                            colors = CheckboxDefaults.colors(checkedColor = OasisTeal)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = item,
+                            fontSize = 14.sp,
+                            color = if (isChecked) Stone else DeepInk,
+                            textDecoration = if (isChecked) TextDecoration.LineThrough else TextDecoration.None
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // 식재료 직접 추가
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = newIngredientText,
+                        onValueChange = { newIngredientText = it },
+                        placeholder = { Text("추가할 식재료 (예: 유기농 사과)", fontSize = 12.sp) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Button(
+                        onClick = {
+                            if (newIngredientText.isNotBlank()) {
+                                customItems.add(newIngredientText.trim())
+                                newIngredientText = ""
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = OasisTeal),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text("추가", fontSize = 12.sp)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = OasisTeal),
+                shape = RoundedCornerShape(999.dp)
+            ) {
+                Text("장보기 완료", fontWeight = FontWeight.Bold)
+            }
+        }
+    )
 }
 
 @Composable

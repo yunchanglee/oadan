@@ -10,6 +10,7 @@ import kr.co.oadan.data.model.ConditionLog
 import kr.co.oadan.data.model.FastSession
 import kr.co.oadan.data.model.MealLog
 import kr.co.oadan.data.model.WaterLog
+import java.io.File
 
 data class OadanBackupPayload(
     val version: Int = 1,
@@ -25,7 +26,8 @@ class BackupRepository(
     private val waterLogDao: WaterLogDao,
     private val conditionLogDao: ConditionLogDao,
     private val mealLogDao: MealLogDao,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val cacheDir: File? = null
 ) {
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
 
@@ -59,5 +61,6 @@ class BackupRepository(
         conditionLogDao.deleteAll()
         mealLogDao.deleteAll()
         userPreferencesRepository.resetAll()
+        cacheDir?.let { File(it, "cert_cards").deleteRecursively() }
     }
 }

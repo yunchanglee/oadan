@@ -97,11 +97,15 @@ fun FastingTimeEditDialog(
                     try {
                         val parsedStartDate = sdf.parse(startText)
                         val targetHours = targetHoursText.toFloatOrNull() ?: 16f
-                        if (parsedStartDate == null || targetHours <= 0) {
-                            errorMsg = "올바른 날짜와 시간을 입력해 주세요."
+                        if (parsedStartDate == null || targetHours !in 1f..72f) {
+                            errorMsg = "목표 단식 시간은 1~72시간 사이로 입력해 주세요."
                             return@Button
                         }
                         val newStartTime = parsedStartDate.time
+                        if (newStartTime > System.currentTimeMillis()) {
+                            errorMsg = "시작 시각은 현재 시각 이후(미래)로 설정할 수 없어요."
+                            return@Button
+                        }
                         val newTargetEndTime = newStartTime + (targetHours * 3600f * 1000f).toLong()
                         onSave(newStartTime, newTargetEndTime)
                         onDismiss()

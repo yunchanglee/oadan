@@ -23,8 +23,15 @@ class FastingActionReceiver : BroadcastReceiver() {
                     waterRepository.addWater(250)
                 }
                 FastingNotificationManager.ACTION_STOP_FASTING -> {
-                    fastingRepository.endFasting()
+                    val active = fastingRepository.getActiveSessionOnce()
+                    if (active != null) {
+                        val elapsedHours = (System.currentTimeMillis() - active.startTimeUtc) / (3600f * 1000f)
+                        val isPartial = elapsedHours < active.targetHours
+                        fastingRepository.endFasting(isPartial = isPartial)
+                    }
                     notificationManager.dismissOngoingNotification()
+                    notificationManager.cancelAlarms(listOf(101))
+                    kr.co.oadan.widget.FastingAppWidgetProvider.updateAllWidgets(context)
                 }
             }
         }

@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -63,6 +64,9 @@ fun OadanApp(viewModel: OadanViewModel = viewModel()) {
     val todayWaterMl by viewModel.todayWaterMl.collectAsState()
     val recipes by viewModel.recipes.collectAsState()
     val recentSessions by viewModel.recentSessions.collectAsState()
+    val allSessions by viewModel.allSessions.collectAsState()
+    val conditionLogs by viewModel.conditionLogs.collectAsState()
+    val allWaterLogs by viewModel.allWaterLogs.collectAsState()
     val streakDays by viewModel.streakDays.collectAsState()
     val latestWeight by viewModel.latestWeight.collectAsState()
 
@@ -171,6 +175,9 @@ fun OadanApp(viewModel: OadanViewModel = viewModel()) {
         AppSubScreen.NONE -> {
             // 메인 탭 화면 Scaffold
             Scaffold(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding(),
                 bottomBar = {
                     OadanBottomNavigation(
                         selectedTab = selectedTab,
@@ -245,6 +252,7 @@ fun OadanApp(viewModel: OadanViewModel = viewModel()) {
                         OadanTab.RECORD -> {
                             RecordScreen(
                                 lastWeightKg = latestWeight,
+                                recentLogs = conditionLogs,
                                 onSaveRecord = { w, m, f, tag, memo ->
                                     viewModel.saveConditionRecord(w, m, f, tag, memo)
                                 },
@@ -257,7 +265,9 @@ fun OadanApp(viewModel: OadanViewModel = viewModel()) {
 
                         OadanTab.REPORT -> {
                             ReportScreen(
-                                sessions = recentSessions,
+                                sessions = allSessions,
+                                conditionLogs = conditionLogs,
+                                waterLogs = allWaterLogs,
                                 streakDays = streakDays,
                                 saverCount = preferences.streakSaverCount
                             )
@@ -271,6 +281,12 @@ fun OadanApp(viewModel: OadanViewModel = viewModel()) {
                                 },
                                 onNavigateToPlanSelect = {
                                     subScreen = AppSubScreen.PLAN_SELECT
+                                },
+                                onUpdateWaterGoal = { newGoal ->
+                                    viewModel.setDailyWaterGoal(newGoal)
+                                },
+                                onUpdateSchedule = { useSchedule ->
+                                    viewModel.setUseDayOfWeekSchedule(useSchedule)
                                 },
                                 onExportJson = {
                                     viewModel.exportJson()

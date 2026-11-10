@@ -100,13 +100,17 @@ object CertificationCardGenerator {
             canvas.drawText("🥗", w / 2f, photoHeight / 2f + 40f, paint)
         }
 
-        // Top Brand Logo
+        val isStory = h > w
+        val safeTop = if (isStory) 260f else 80f
+        val safeBottom = if (isStory) h - 260f else h - 60f
+
+        // Top Brand Logo (9:16 스토리 안전 영역 250px 하단 배치)
         paint.color = 0xFFFFFFFF.toInt()
         paint.textSize = 42f
         paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         paint.textAlign = Paint.Align.LEFT
         paint.alpha = 240
-        canvas.drawText("OADAN", 64f, 80f, paint)
+        canvas.drawText("OADAN", 64f, safeTop, paint)
 
         // Bottom Info Area
         val infoTop = photoHeight.toFloat()
@@ -142,17 +146,17 @@ object CertificationCardGenerator {
             canvas.drawText(data.weightChangeText, rightX, rightY, paint)
         }
 
-        // Bottom watermark & date
+        // Bottom watermark & date (9:16 스토리 하단 안전 영역 250px 상단 배치)
         paint.textAlign = Paint.Align.LEFT
         paint.color = 0xFF5C6663.toInt()
         paint.textSize = 32f
-        canvas.drawText(data.dateString, 64f, h - 60f, paint)
+        canvas.drawText(data.dateString, 64f, safeBottom, paint)
 
         paint.textAlign = Paint.Align.RIGHT
         paint.color = 0xFF16796B.toInt()
         paint.textSize = 34f
         paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        canvas.drawText("#오아단인증", rightX, h - 60f, paint)
+        canvas.drawText("#오아단인증", rightX, safeBottom, paint)
     }
 
     private fun drawMinimalTemplate(
@@ -173,12 +177,16 @@ object CertificationCardGenerator {
         canvas.drawRect(50f, 50f, w - 50f, h - 50f, paint)
         paint.style = Paint.Style.FILL
 
+        val isStory = h > w
+        val safeTop = if (isStory) 300f else 160f
+        val safeBottom = if (isStory) h - 260f else h - 100f
+
         // Center quote & time
         paint.textAlign = Paint.Align.CENTER
         paint.color = 0xFF16796B.toInt()
         paint.textSize = 40f
         paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        canvas.drawText("OADAN", w / 2f, 160f, paint)
+        canvas.drawText("OADAN", w / 2f, safeTop, paint)
 
         paint.textSize = 140f
         paint.color = 0xFF1E2A28.toInt()
@@ -197,7 +205,7 @@ object CertificationCardGenerator {
         // Footer
         paint.textSize = 36f
         paint.color = 0xFF5C6663.toInt()
-        canvas.drawText("${data.dateString}  |  #오아단인증", w / 2f, h - 100f, paint)
+        canvas.drawText("${data.dateString}  |  #오아단인증", w / 2f, safeBottom, paint)
     }
 
     private fun drawOasisTemplate(
@@ -207,17 +215,21 @@ object CertificationCardGenerator {
         data: CertCardData,
         paint: Paint
     ) {
+        val isStory = h > w
+        val safeTop = if (isStory) 320f else 220f
+        val safeBottom = if (isStory) h - 260f else h - 70f
+
         // Oasis Teal Gradient or Deep Calm
         paint.color = 0xFF16796B.toInt()
         canvas.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
 
         // Desert Dune curves at bottom
         paint.color = 0xFF5FB8A8.toInt()
-        val rectF = RectF(-200f, h - 450f, w + 200f, h + 300f)
+        val rectF = RectF(-200f, h - 550f, w + 200f, h + 300f)
         canvas.drawOval(rectF, paint)
 
         paint.color = 0xFFFAF6EF.toInt()
-        val innerRect = RectF(-100f, h - 300f, w + 100f, h + 200f)
+        val innerRect = RectF(-100f, h - 420f, w + 100f, h + 200f)
         canvas.drawOval(innerRect, paint)
 
         // Text in White
@@ -225,22 +237,22 @@ object CertificationCardGenerator {
         paint.color = 0xFFFFFFFF.toInt()
         paint.textSize = 48f
         paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        canvas.drawText("비우고, 채우는 오아시스", w / 2f, 220f, paint)
+        canvas.drawText("비우고, 채우는 오아시스", w / 2f, safeTop, paint)
 
         paint.textSize = 140f
-        canvas.drawText(data.fastedTimeString, w / 2f, 420f, paint)
+        canvas.drawText(data.fastedTimeString, w / 2f, safeTop + 200f, paint)
 
         paint.textSize = 48f
-        canvas.drawText("${data.stage.emoji} ${data.stage.stageName} 도달  ·  🔥 ${data.streakDays}일째", w / 2f, 520f, paint)
+        canvas.drawText("${data.stage.emoji} ${data.stage.stageName} 도달  ·  🔥 ${data.streakDays}일째", w / 2f, safeTop + 300f, paint)
 
         // Bottom on Sand
         paint.color = 0xFF1E2A28.toInt()
         paint.textSize = 40f
-        canvas.drawText(data.quote, w / 2f, h - 140f, paint)
+        canvas.drawText(data.quote, w / 2f, safeBottom - 60f, paint)
 
         paint.color = 0xFF16796B.toInt()
         paint.textSize = 34f
-        canvas.drawText("${data.dateString}  #오아단인증", w / 2f, h - 70f, paint)
+        canvas.drawText("${data.dateString}  #오아단인증", w / 2f, safeBottom, paint)
     }
 
     fun saveBitmapToCache(context: Context, bitmap: Bitmap): File {
