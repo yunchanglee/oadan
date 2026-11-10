@@ -62,6 +62,7 @@ import kr.co.oadan.ui.theme.StageLagoon
 import kr.co.oadan.ui.theme.Stone
 import kr.co.oadan.ui.theme.Teal50
 import kr.co.oadan.ui.theme.Teal700
+import kr.co.oadan.ui.theme.Teal800
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -119,7 +120,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 96.dp)
+                .padding(bottom = 20.dp)
         ) {
             // App Bar
             Row(
@@ -237,25 +238,47 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 다음 단계 안내 카드
+                // 다음 단계 안내 카드 (SC-11)
                 if (timerState.nextStage != null) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
                             .background(Color.White)
-                            .padding(14.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = timerState.nextStage.emoji, fontSize = 24.sp)
+                        // SC-11 좌측 인디케이터 컬러 바
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .width(5.dp)
+                                .height(46.dp)
+                                .clip(RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
+                                .background(Teal800)
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "✨", fontSize = 22.sp)
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "${timerState.nextStage.stageName}까지 ${FastTimerEngine.formatRemainingKorean(timerState.nextStageRemainingMillis)}",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Teal700
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "${timerState.nextStage.stageName}까지 ",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = DeepInk
+                                    )
+                                    Text(
+                                        text = FastTimerEngine.formatRemainingKorean(timerState.nextStageRemainingMillis),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = OasisTeal
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = timerState.nextStage.description,
@@ -270,30 +293,48 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // 공복 마치기 버튼 (충동적 종료 방지를 위해 Tonal 스타일로 배치)
-                Button(
-                    onClick = {
-                        if (!timerState.isGoalReached) {
-                            showDefenseDialog = true
-                        } else {
-                            val elapsedHours = timerState.elapsedMillis / (3600f * 1000f)
-                            onEndFasting(false)
-                            onNavigateToComplete(elapsedHours)
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Teal50,
-                        contentColor = Teal700
-                    ),
-                    shape = RoundedCornerShape(999.dp),
+                // SC-11: 하단 액션 영역 (좌측: 공복 마치기 버튼 / 우측: 물마심 원형 버튼)
+                Row(
                     modifier = Modifier
-                        .fillMaxWidth(0.65f)
-                        .height(48.dp)
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = if (timerState.isGoalReached) "목표 달성! 공복 마치기" else "공복 마치기",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp
+                    // 1. 공복 마치기 버튼 (충동적 종료 방지 Tonal 스타일 + 알약형)
+                    Button(
+                        onClick = {
+                            if (!timerState.isGoalReached) {
+                                showDefenseDialog = true
+                            } else {
+                                val elapsedHours = timerState.elapsedMillis / (3600f * 1000f)
+                                onEndFasting(false)
+                                onNavigateToComplete(elapsedHours)
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Teal50,
+                            contentColor = OasisTeal
+                        ),
+                        shape = RoundedCornerShape(999.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(52.dp)
+                            .padding(end = 16.dp)
+                    ) {
+                        Text(
+                            text = if (timerState.isGoalReached) "목표 달성! 공복 마치기" else "공복 마치기",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = OasisTeal
+                        )
+                    }
+
+                    // 2. 수분 원터치 기록 원형 버튼
+                    WaterFabButton(
+                        currentWaterMl = currentWaterMl,
+                        dailyGoalMl = dailyWaterGoalMl,
+                        onAddWater = onAddWater
                     )
                 }
 
@@ -350,15 +391,17 @@ fun HomeScreen(
             }
         }
 
-        // 수분 기록 64dp 플로팅 버튼 (우측 하단)
-        WaterFabButton(
-            currentWaterMl = currentWaterMl,
-            dailyGoalMl = dailyWaterGoalMl,
-            onAddWater = onAddWater,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 100.dp)
-        )
+        // 단식 대기 상태(SC-10)일 때만 우측 하단 플로팅 버튼으로 표시
+        if (activeSession == null) {
+            WaterFabButton(
+                currentWaterMl = currentWaterMl,
+                dailyGoalMl = dailyWaterGoalMl,
+                onAddWater = onAddWater,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 20.dp, bottom = 20.dp)
+            )
+        }
 
         // 바텀시트 & 다이얼로그 렌더링
         if (showStageSheet && timerState != null) {
