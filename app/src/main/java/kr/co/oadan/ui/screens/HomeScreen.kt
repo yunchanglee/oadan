@@ -74,13 +74,15 @@ fun HomeScreen(
     activeSession: FastSession?,
     currentWaterMl: Int,
     dailyWaterGoalMl: Int,
+    unreadNotificationCount: Int = 0,
     onStartFasting: () -> Unit,
     onEndFasting: (isPartial: Boolean) -> Unit,
     onUpdateSessionTimes: (sessionId: Long, newStart: Long, newTargetEnd: Long) -> Unit,
     onUpdateTargetHours: (Float) -> Unit,
     onAddWater: (Int) -> Unit,
     onNavigateToComplete: (fastedHours: Float) -> Unit,
-    onNavigateToPlanSelect: () -> Unit
+    onNavigateToPlanSelect: () -> Unit,
+    onNavigateToNotifications: () -> Unit
 ) {
     // 실시간 1초 단위 시간 갱신
     var currentTimeUtc by remember { mutableStateOf(System.currentTimeMillis()) }
@@ -135,11 +137,26 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(
-                        text = "${FastTimerEngine.formatTodayDateKorean()} · ${activeSession?.protocol ?: "휴식 중"}",
-                        fontSize = 12.sp,
-                        color = Stone
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable { onNavigateToPlanSelect() }
+                            .padding(vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "${FastTimerEngine.formatTodayDateKorean()} · ${activeSession?.protocol ?: "휴식 중"}",
+                            fontSize = 12.sp,
+                            color = Stone
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "플랜 변경 ▾",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = OasisTeal
+                        )
+                    }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "오늘의 공복",
@@ -149,12 +166,22 @@ fun HomeScreen(
                     )
                 }
 
-                IconButton(onClick = onNavigateToPlanSelect) {
-                    Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = "알림 및 플랜",
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
+                IconButton(onClick = onNavigateToNotifications) {
+                    Box(contentAlignment = Alignment.TopEnd) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "알림 목록",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
+                        if (unreadNotificationCount > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(SunsetCoral)
+                            )
+                        }
+                    }
                 }
             }
 

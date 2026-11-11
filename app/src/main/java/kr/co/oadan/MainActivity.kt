@@ -36,6 +36,7 @@ import kr.co.oadan.ui.screens.CertCardShareScreen
 import kr.co.oadan.ui.screens.FastingCompleteScreen
 import kr.co.oadan.ui.screens.HomeScreen
 import kr.co.oadan.ui.screens.MySettingsScreen
+import kr.co.oadan.ui.screens.NotificationListScreen
 import kr.co.oadan.ui.screens.OnboardingScreen
 import kr.co.oadan.ui.screens.PlanSelectScreen
 import kr.co.oadan.ui.screens.RecipeDetailScreen
@@ -49,7 +50,8 @@ enum class AppSubScreen {
     FASTING_COMPLETE,
     RECIPE_DETAIL,
     BREAK_FAST_RECORD,
-    CERT_CARD_SHARE
+    CERT_CARD_SHARE,
+    NOTIFICATION_LIST
 }
 
 class MainActivity : ComponentActivity() {
@@ -83,6 +85,8 @@ fun OadanApp(viewModel: OadanViewModel = viewModel()) {
     val allWaterLogs by viewModel.allWaterLogs.collectAsState()
     val streakDays by viewModel.streakDays.collectAsState()
     val latestWeight by viewModel.latestWeight.collectAsState()
+    val notifications by viewModel.notifications.collectAsState()
+    val unreadNotificationCount by viewModel.unreadNotificationCount.collectAsState()
 
     var selectedTab by remember { mutableStateOf(OadanTab.HOME) }
     var subScreen by remember { mutableStateOf(AppSubScreen.NONE) }
@@ -104,6 +108,9 @@ fun OadanApp(viewModel: OadanViewModel = viewModel()) {
     // 스마트폰 시스템 뒤로가기 1: 서브 화면이 열려 있을 때 이전 서브 화면 또는 메인 화면으로 복귀
     BackHandler(enabled = subScreen != AppSubScreen.NONE) {
         when (subScreen) {
+            AppSubScreen.NOTIFICATION_LIST -> {
+                subScreen = AppSubScreen.NONE
+            }
             AppSubScreen.PLAN_SELECT -> {
                 subScreen = AppSubScreen.NONE
             }
@@ -248,6 +255,37 @@ fun OadanApp(viewModel: OadanViewModel = viewModel()) {
             return
         }
 
+        AppSubScreen.NOTIFICATION_LIST -> {
+            NotificationListScreen(
+                notifications = notifications,
+                preferences = preferences,
+                onBack = { subScreen = AppSubScreen.NONE },
+                onMarkAsRead = { viewModel.markNotificationAsRead(it) },
+                onMarkAllAsRead = { viewModel.markAllNotificationsAsRead() },
+                onDeleteNotification = { viewModel.deleteNotification(it) },
+                onClearAll = { viewModel.clearAllNotifications() },
+                onNavigateToTab = { tabName ->
+                    subScreen = AppSubScreen.NONE
+                    val targetTab = when (tabName) {
+                        "HOME" -> OadanTab.HOME
+                        "BREAK_FAST" -> OadanTab.BREAK_FAST
+                        "RECORD" -> OadanTab.RECORD
+                        "REPORT" -> OadanTab.REPORT
+                        "MY" -> OadanTab.MY
+                        else -> OadanTab.HOME
+                    }
+                    navigateToTab(targetTab)
+                },
+                onUpdateNotifications = { s, e, stg ->
+                    viewModel.updateNotifications(s, e, stg)
+                },
+                onUpdateCheerNotification = {
+                    viewModel.updateCheerNotification(it)
+                }
+            )
+            return
+        }
+
         AppSubScreen.NONE -> {
             // 메인 탭 화면 Scaffold
             Scaffold(
@@ -273,6 +311,7 @@ fun OadanApp(viewModel: OadanViewModel = viewModel()) {
                                 activeSession = activeSession,
                                 currentWaterMl = todayWaterMl,
                                 dailyWaterGoalMl = preferences.dailyWaterGoalMl,
+                                unreadNotificationCount = unreadNotificationCount,
                                 onStartFasting = {
                                     subScreen = AppSubScreen.PLAN_SELECT
                                 },
@@ -298,6 +337,9 @@ fun OadanApp(viewModel: OadanViewModel = viewModel()) {
                                 },
                                 onNavigateToPlanSelect = {
                                     subScreen = AppSubScreen.PLAN_SELECT
+                                },
+                                onNavigateToNotifications = {
+                                    subScreen = AppSubScreen.NOTIFICATION_LIST
                                 }
                             )
                         }
