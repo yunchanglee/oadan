@@ -424,7 +424,7 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 1. 공복 마치기 버튼 (충동적 종료 방지 Tonal 스타일 + 알약형)
+                    // 1. 공복 마치기 버튼 (주변 Teal50 카드와 명확히 대비되는 선셋 코랄 브랜드 컬러 적용)
                     Button(
                         onClick = {
                             if (!timerState.isGoalReached) {
@@ -436,9 +436,10 @@ fun HomeScreen(
                             }
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Teal50,
-                            contentColor = OasisTeal
+                            containerColor = SunsetCoral,
+                            contentColor = Color.White
                         ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
                         shape = RoundedCornerShape(999.dp),
                         modifier = Modifier
                             .weight(1f)
@@ -449,7 +450,7 @@ fun HomeScreen(
                             text = if (timerState.isGoalReached) "목표 달성! 공복 마치기" else "공복 마치기",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
-                            color = OasisTeal
+                            color = Color.White
                         )
                     }
 
