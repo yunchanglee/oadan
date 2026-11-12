@@ -392,7 +392,26 @@ fun OadanApp(viewModel: OadanViewModel = viewModel()) {
                                 conditionLogs = conditionLogs,
                                 waterLogs = allWaterLogs,
                                 streakDays = streakDays,
-                                saverCount = preferences.streakSaverCount
+                                saverCount = preferences.streakSaverCount,
+                                onSaveFastSession = { updatedSession ->
+                                    if (updatedSession.id == 0L) {
+                                        viewModel.addFastSession(updatedSession)
+                                    } else {
+                                        viewModel.updateFastSession(updatedSession)
+                                    }
+                                },
+                                onDeleteFastSession = { sessionToDelete ->
+                                    viewModel.deleteFastSession(sessionToDelete)
+                                },
+                                onSaveCondition = { d, w, m, f, c, memo ->
+                                    viewModel.saveConditionRecordForDate(d, w, m, f, c, memo)
+                                },
+                                onDeleteCondition = { d ->
+                                    viewModel.saveConditionRecordForDate(d, null, null, null, null, null)
+                                },
+                                onSaveWater = { d, totalMl ->
+                                    viewModel.setWaterForDate(d, totalMl)
+                                }
                             )
                         }
 

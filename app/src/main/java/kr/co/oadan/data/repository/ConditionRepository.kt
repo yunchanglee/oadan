@@ -28,11 +28,37 @@ class ConditionRepository(private val conditionLogDao: ConditionLogDao) {
         skeletalMuscleKg: Float? = null,
         bodyFatPercent: Float? = null,
         conditionTag: String? = null,
-        memo: String? = null
+        memo: String? = null,
+        date: String? = null
     ): Long {
+        val dateStr = date ?: getTodayDateString()
         val log = ConditionLog(
             timestampUtc = System.currentTimeMillis(),
-            date = getTodayDateString(),
+            date = dateStr,
+            weightKg = weightKg,
+            skeletalMuscleKg = skeletalMuscleKg,
+            bodyFatPercent = bodyFatPercent,
+            conditionTag = conditionTag,
+            memo = memo
+        )
+        return conditionLogDao.insert(log)
+    }
+
+    suspend fun saveOrUpdateForDate(
+        date: String,
+        weightKg: Float? = null,
+        skeletalMuscleKg: Float? = null,
+        bodyFatPercent: Float? = null,
+        conditionTag: String? = null,
+        memo: String? = null
+    ): Long {
+        conditionLogDao.deleteLogsForDate(date)
+        if (weightKg == null && conditionTag == null && memo.isNullOrBlank()) {
+            return 0L
+        }
+        val log = ConditionLog(
+            timestampUtc = System.currentTimeMillis(),
+            date = date,
             weightKg = weightKg,
             skeletalMuscleKg = skeletalMuscleKg,
             bodyFatPercent = bodyFatPercent,

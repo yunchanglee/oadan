@@ -251,6 +251,57 @@ class OadanViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updateFastSession(session: FastSession) {
+        viewModelScope.launch(Dispatchers.IO) {
+            fastingRepository.updateSession(session)
+            val active = fastingRepository.getActiveSessionOnce()
+            if (active?.id == session.id) {
+                scheduleFastingAlarms(session.startTimeUtc, session.targetEndTimeUtc, session.targetHours)
+            }
+            FastingAppWidgetProvider.updateAllWidgets(getApplication())
+        }
+    }
+
+    fun deleteFastSession(session: FastSession) {
+        viewModelScope.launch(Dispatchers.IO) {
+            fastingRepository.deleteSession(session)
+            FastingAppWidgetProvider.updateAllWidgets(getApplication())
+        }
+    }
+
+    fun addFastSession(session: FastSession) {
+        viewModelScope.launch(Dispatchers.IO) {
+            fastingRepository.insertSession(session)
+            FastingAppWidgetProvider.updateAllWidgets(getApplication())
+        }
+    }
+
+    fun saveConditionRecordForDate(
+        date: String,
+        weightKg: Float?,
+        muscleKg: Float? = null,
+        fatPercent: Float? = null,
+        conditionTag: String?,
+        memo: String?
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            conditionRepository.saveOrUpdateForDate(
+                date = date,
+                weightKg = weightKg,
+                skeletalMuscleKg = muscleKg,
+                bodyFatPercent = fatPercent,
+                conditionTag = conditionTag,
+                memo = memo
+            )
+        }
+    }
+
+    fun setWaterForDate(date: String, totalMl: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            waterRepository.setWaterForDate(date, totalMl)
+        }
+    }
+
     fun saveConditionRecord(
         weightKg: Float?,
         muscleKg: Float?,

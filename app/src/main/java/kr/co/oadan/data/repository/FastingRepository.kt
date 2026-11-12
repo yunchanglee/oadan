@@ -110,6 +110,18 @@ class FastingRepository(private val fastSessionDao: FastSessionDao) {
         )
     }
 
+    suspend fun updateSession(session: FastSession) {
+        fastSessionDao.update(session)
+    }
+
+    suspend fun deleteSession(session: FastSession) {
+        fastSessionDao.delete(session)
+    }
+
+    suspend fun insertSession(session: FastSession): Long {
+        return fastSessionDao.insert(session)
+    }
+
     fun calculateStreak(): Flow<Int> = fastSessionDao.getAllSessions().map { sessions ->
         // 완료된 세션 기반 연속 달성일 계산
         val completedDates = sessions

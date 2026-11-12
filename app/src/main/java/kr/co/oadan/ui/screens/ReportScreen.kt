@@ -1,6 +1,7 @@
 package kr.co.oadan.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -49,6 +50,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kr.co.oadan.data.model.ConditionLog
@@ -56,6 +58,9 @@ import kr.co.oadan.data.model.FastSession
 import kr.co.oadan.data.model.WaterLog
 import kr.co.oadan.domain.FastTimerEngine
 import kr.co.oadan.domain.MetabolicStage
+import kr.co.oadan.ui.components.ReportConditionEditDialog
+import kr.co.oadan.ui.components.ReportFastEditDialog
+import kr.co.oadan.ui.components.ReportWaterEditDialog
 import kr.co.oadan.ui.theme.DeepInk
 import kr.co.oadan.ui.theme.Dune
 import kr.co.oadan.ui.theme.OasisTeal
@@ -78,9 +83,19 @@ fun ReportScreen(
     conditionLogs: List<ConditionLog> = emptyList(),
     waterLogs: List<WaterLog> = emptyList(),
     streakDays: Int,
-    saverCount: Int = 2
+    saverCount: Int = 2,
+    onSaveFastSession: ((FastSession) -> Unit)? = null,
+    onDeleteFastSession: ((FastSession) -> Unit)? = null,
+    onSaveCondition: ((date: String, weightKg: Float?, muscleKg: Float?, fatPercent: Float?, conditionTag: String?, memo: String?) -> Unit)? = null,
+    onDeleteCondition: ((date: String) -> Unit)? = null,
+    onSaveWater: ((date: String, totalMl: Int) -> Unit)? = null
 ) {
     var isMonthly by remember { mutableStateOf(true) }
+
+    // 다이얼로그 노출 상태
+    var showFastEditDialog by remember { mutableStateOf(false) }
+    var showConditionEditDialog by remember { mutableStateOf(false) }
+    var showWaterEditDialog by remember { mutableStateOf(false) }
 
     // 캘린더 연/월 상태 (이전달/다음달 이동 기능)
     val calendarInstance = remember {
@@ -240,7 +255,10 @@ fun ReportScreen(
                 dateStr = selectedDateStr,
                 session = sessions.firstOrNull { it.date == selectedDateStr },
                 condition = conditionLogs.firstOrNull { it.date == selectedDateStr },
-                waterLogs = waterLogs.filter { it.date == selectedDateStr }
+                waterLogs = waterLogs.filter { it.date == selectedDateStr },
+                onEditFast = { showFastEditDialog = true },
+                onEditCondition = { showConditionEditDialog = true },
+                onEditWater = { showWaterEditDialog = true }
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -249,6 +267,49 @@ fun ReportScreen(
             DualAxisChartSection(
                 sessions = sessions,
                 conditionLogs = conditionLogs
+            )
+        }
+
+        // ==================== 기록 수정 다이얼로그들 ====================
+        if (showFastEditDialog) {
+            val selectedSession = sessions.firstOrNull { it.date == selectedDateStr }
+            ReportFastEditDialog(
+                session = selectedSession,
+                targetDateStr = selectedDateStr,
+                onDismiss = { showFastEditDialog = false },
+                onSave = { updatedSession ->
+                    onSaveFastSession?.invoke(updatedSession)
+                },
+                onDelete = { sessionToDelete ->
+                    onDeleteFastSession?.invoke(sessionToDelete)
+                }
+            )
+        }
+
+        if (showConditionEditDialog) {
+            val selectedCondition = conditionLogs.firstOrNull { it.date == selectedDateStr }
+            ReportConditionEditDialog(
+                dateStr = selectedDateStr,
+                existingLog = selectedCondition,
+                onDismiss = { showConditionEditDialog = false },
+                onSave = { w, m, f, c, memo ->
+                    onSaveCondition?.invoke(selectedDateStr, w, m, f, c, memo)
+                },
+                onDelete = {
+                    onDeleteCondition?.invoke(selectedDateStr)
+                }
+            )
+        }
+
+        if (showWaterEditDialog) {
+            val currentTotalWaterMl = waterLogs.filter { it.date == selectedDateStr }.sumOf { it.amountMl }
+            ReportWaterEditDialog(
+                dateStr = selectedDateStr,
+                currentTotalMl = currentTotalWaterMl,
+                onDismiss = { showWaterEditDialog = false },
+                onSave = { totalMl ->
+                    onSaveWater?.invoke(selectedDateStr, totalMl)
+                }
             )
         }
     }
@@ -539,14 +600,17 @@ private fun WeeklySummarySection(
 }
 
 /**
- * 선택된 날짜 상세 카드 (공복시간, 대사단계, 수분량, 체중 등 상세 정보 노출)
+ * 선택된 날짜 상세 카드 (공복시간, 대사단계, 수분량, 체중 등 상세 정보 노출 및 기록 수정 연동)
  */
 @Composable
 private fun SelectedDateDetailCard(
     dateStr: String,
     session: FastSession?,
     condition: ConditionLog?,
-    waterLogs: List<WaterLog>
+    waterLogs: List<WaterLog>,
+    onEditFast: () -> Unit,
+    onEditCondition: () -> Unit,
+    onEditWater: () -> Unit
 ) {
     val totalWaterMl = waterLogs.sumOf { it.amountMl }
 
@@ -557,6 +621,7 @@ private fun SelectedDateDetailCard(
             .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
     ) {
+        // 상단 헤더: 날짜 & 상태 뱃지
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -588,6 +653,7 @@ private fun SelectedDateDetailCard(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // 1. 단식 기록 섹션
         if (session != null) {
             val hours = session.fastedHours ?: ((session.actualEndTimeUtc ?: session.targetEndTimeUtc) - session.startTimeUtc) / (3600f * 1000f)
             val stage = MetabolicStage.fromElapsedHours(hours)
@@ -598,8 +664,10 @@ private fun SelectedDateDetailCard(
             ) {
                 DetailMiniCard(
                     title = "공복 시간",
-                    value = String.format("%.1f시간", hours),
+                    value = String.format(Locale.KOREA, "%.1f시간", hours),
                     sub = session.protocol,
+                    actionText = "수정 ✏️",
+                    onAction = onEditFast,
                     modifier = Modifier.weight(1f)
                 )
                 DetailMiniCard(
@@ -609,41 +677,63 @@ private fun SelectedDateDetailCard(
                     modifier = Modifier.weight(1f)
                 )
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                DetailMiniCard(
-                    title = "수분 섭취",
-                    value = if (totalWaterMl > 0) String.format("%.1fL", totalWaterMl / 1000f) else "기록 없음",
-                    sub = "${waterLogs.size}회 섭취",
-                    modifier = Modifier.weight(1f)
-                )
-                DetailMiniCard(
-                    title = "기록된 체중",
-                    value = condition?.weightKg?.let { "${it}kg" } ?: "미기록",
-                    sub = condition?.conditionTag ?: "컨디션 보통",
-                    modifier = Modifier.weight(1f)
-                )
-            }
         } else {
-            Box(
+            // 단식 기록 없는 날
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
                     .background(MaterialTheme.colorScheme.background)
-                    .padding(14.dp),
-                contentAlignment = Alignment.Center
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "이 날은 단식 없이 편안히 몸을 쉬어간 날이에요 🌿",
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(SunsetCoral.copy(alpha = 0.15f))
+                        .border(1.dp, SunsetCoral.copy(alpha = 0.5f), RoundedCornerShape(999.dp))
+                        .clickable(onClick = onEditFast)
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "+ 이 날의 단식 기록 추가하기",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SunsetCoral
+                    )
+                }
             }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // 2. 수분 및 체중 라이프로그 섹션
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            DetailMiniCard(
+                title = "수분 섭취",
+                value = if (totalWaterMl > 0) String.format(Locale.KOREA, "%.1fL", totalWaterMl / 1000f) else "기록 없음",
+                sub = if (totalWaterMl > 0) "${waterLogs.size}회 섭취" else "탭하여 기록",
+                actionText = "수정 ✏️",
+                onAction = onEditWater,
+                modifier = Modifier.weight(1f)
+            )
+            DetailMiniCard(
+                title = "기록된 체중",
+                value = condition?.weightKg?.let { "${it}kg" } ?: "미기록",
+                sub = condition?.conditionTag ?: "탭하여 기록",
+                actionText = "수정 ✏️",
+                onAction = onEditCondition,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -653,20 +743,58 @@ private fun DetailMiniCard(
     title: String,
     value: String,
     sub: String,
+    actionText: String? = null,
+    onAction: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
             .background(MaterialTheme.colorScheme.background)
+            .then(
+                if (onAction != null) {
+                    Modifier.clickable(onClick = onAction)
+                } else {
+                    Modifier
+                }
+            )
             .padding(10.dp)
     ) {
         Column {
-            Text(text = title, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (actionText != null && onAction != null) {
+                    Text(
+                        text = actionText,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SunsetCoral
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(
+                text = value,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = sub, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                text = sub,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

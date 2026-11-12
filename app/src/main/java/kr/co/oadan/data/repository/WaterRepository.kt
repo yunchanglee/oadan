@@ -22,13 +22,25 @@ class WaterRepository(private val waterLogDao: WaterLogDao) {
         return waterLogDao.getTotalWaterForDate(getTodayDateString()).map { it ?: 0 }
     }
 
-    suspend fun addWater(amountMl: Int = 250): Long {
+    suspend fun addWater(amountMl: Int = 250, date: String? = null): Long {
         val log = WaterLog(
             timestampUtc = System.currentTimeMillis(),
             amountMl = amountMl,
-            date = getTodayDateString()
+            date = date ?: getTodayDateString()
         )
         return waterLogDao.insert(log)
+    }
+
+    suspend fun setWaterForDate(date: String, totalMl: Int) {
+        waterLogDao.deleteLogsForDate(date)
+        if (totalMl > 0) {
+            val log = WaterLog(
+                timestampUtc = System.currentTimeMillis(),
+                amountMl = totalMl,
+                date = date
+            )
+            waterLogDao.insert(log)
+        }
     }
 
     fun getAllLogs(): Flow<List<WaterLog>> = waterLogDao.getAllWaterLogs()

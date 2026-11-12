@@ -24,6 +24,9 @@ interface ConditionLogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(log: ConditionLog): Long
 
+    @Query("DELETE FROM condition_logs WHERE date = :date")
+    suspend fun deleteLogsForDate(date: String)
+
     @Query("DELETE FROM condition_logs")
     suspend fun deleteAll()
 }

@@ -28,6 +28,9 @@ interface WaterLogDao {
     @Delete
     suspend fun delete(log: WaterLog)
 
+    @Query("DELETE FROM water_logs WHERE date = :date")
+    suspend fun deleteLogsForDate(date: String)
+
     @Query("DELETE FROM water_logs")
     suspend fun deleteAll()
 }
